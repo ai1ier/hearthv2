@@ -1,4 +1,4 @@
-// The meadow's quest board, up close: today's open quests pinned as notes.
+// The planet's star board, up close: today's open quests pinned as notes.
 import { html, useEffect } from '../vendor.js';
 import { fmtTime, fmtDur, hash } from '../time.js';
 import { CATEGORIES } from '../defaults.js';
@@ -12,9 +12,9 @@ export function BoardModal({ state, data, focus, onOpen, onClose }) {
     addEventListener('keydown', f); return () => removeEventListener('keydown', f);
   }, []);
 
-  return html`<div class="modal-back" role="dialog" aria-modal="true" aria-label="Quest board" onClick=${(e) => e.target === e.currentTarget && onClose()}>
+  return html`<div class="modal-back" role="dialog" aria-modal="true" aria-label="Star board" onClick=${(e) => e.target === e.currentTarget && onClose()}>
     <div class="corkboard">
-      <div class="cork-head"><h2>📜 The Quest Board</h2><button class="btn sm" onClick=${onClose} aria-label="Close">✕</button></div>
+      <div class="cork-head"><h2>🌟 The Star Board</h2><button class="btn sm" onClick=${onClose} aria-label="Close">✕</button></div>
       ${open.length ? html`<div class="notes">
         ${open.map((s, i) => {
           const top = offers[s.id]?.options.filter((o) => o.kind !== 'free').slice(0, 2) || [];
@@ -23,13 +23,13 @@ export function BoardModal({ state, data, focus, onOpen, onClose }) {
             <span class="pin"></span>
             <b>${fmtTime(s.start)} – ${fmtTime(s.end)}</b>
             <small>${fmtDur(s.minutes)} of open road</small>
-            ${top.length ? top.map((o) => html`<span class="note-q" style=${{ '--c': (CATEGORIES[o.c.category] || {}).color }}>${o.c.icon} ${o.c.name}</span>`) : html`<span class="note-q">🍃 Free roaming</span>`}
+            ${top.length ? top.map((o) => html`<span class="note-q" style=${{ '--c': (CATEGORIES[o.c.category] || {}).color }}>${o.c.icon} ${o.c.name}</span>`) : html`<span class="note-q">☁️ Free roaming</span>`}
             <span class="note-cta">Take this quest →</span>
           </button>`;
         })}
       </div>` : html`<p class="cork-empty">No open quests left today — the board rests, and so can you.</p>`}
       <div class="cork-todo">
-        <h3>📜 Errand Scroll</h3>
+        <h3>☄️ Comet Errands</h3>
         <${TodoList} state=${state} onStart=${onClose} />
       </div>
     </div>

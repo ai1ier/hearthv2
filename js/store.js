@@ -23,7 +23,8 @@ function fresh() {
     library: [],    // {id, kind: book|show|film|game|other, title, by, status, rating, finished, note, at}
     summaries: {},  // 'week:YYYY-MM-DD' | 'month:YYYY-MM' -> {text, at}
     scry: { time: 'live', season: 'auto', weather: 'live' }, // art preview overrides
-    focus: null,    // the running focus session, see focus.js
+    focus: null,    // the running focus session, see focus.js (v2 adds `world`: the travel planet it runs on, and `free` for a free session made for that trip)
+    postcards: [],  // v2: one per finished session: {id, place, title, icon, minutes, at, guide}
     savedAt: 1,     // time of the last change, so cloud.js can tell which save is newer
   };
 }

@@ -1,6 +1,6 @@
-// Lets Hearthside open from the home screen even with no signal: always tries the network
+// Lets Star Chapter open from the home screen even with no signal: always tries the network
 // first (so updates you upload show up straight away), and falls back to the last copy it saw.
-const CACHE = 'hearthside-v1';
+const CACHE = 'starchapter-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));

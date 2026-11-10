@@ -4,6 +4,7 @@ import { store } from '../store.js';
 import { iso, parseISODate, startOfWeek, addDays, hash, fmtDur } from '../time.js';
 import { CATEGORIES } from '../defaults.js';
 import { PixelHeart, Portrait, toast } from './common.js';
+import { guideOf } from '../fandom/index.js';
 import { writeChronicle } from '../ai/claude.js';
 
 export const KINDS = {
@@ -18,7 +19,7 @@ const SPINES = ['#7a3a4a', '#3a5a7a', '#5a7a3a', '#8a6a2a', '#5b3a8c', '#2f6a6a'
 const uid = () => Date.now().toString(36) + Math.floor(Math.random() * 1e4);
 
 function Rating({ value = 0, onChange }) {
-  return html`<span class="rating">${[1, 2, 3, 4, 5].map((v) => html`<button type="button" class="heart-btn" aria-label=${`Rate ${v}`} onClick=${() => onChange?.(v === value ? 0 : v)} disabled=${!onChange}><${PixelHeart} full=${v <= value} px=${2} /></button>`)}</span>`;
+  return html`<span class="rating">${[1, 2, 3, 4, 5].map((v) => html`<button type="button" class="heart-btn" aria-label=${`Rate ${v}`} onClick=${() => onChange?.(v === value ? 0 : v)} disabled=${!onChange}><${PixelHeart} full=${v <= value} px=${1.5} /></button>`)}</span>`;
 }
 
 export function Library({ state }) {
@@ -35,17 +36,17 @@ export function Library({ state }) {
     </section>`;
 }
 
-// ---------------- hall of deeds ----------------
-const GOAL_ICON = { deadline: '✍️', event: '🧭', ongoing: '🌱' };
+// ---------------- wishes granted (fulfilled long-term quests) ----------------
+const GOAL_ICON = { deadline: '✍️', event: '🧭', ongoing: '🌙' };
 function Deeds({ state }) {
   const done = state.profile.goals.filter((g) => g.done).sort((a, b) => (b.fulfilledAt || 0) - (a.fulfilledAt || 0));
   const reopen = (id) => store.setProfile((p) => ({ goals: p.goals.map((g) => (g.id === id ? { ...g, done: false, fulfilledAt: null } : g)) }));
   return html`<div class="panel deeds">
-    <h3>🏆 Hall of Deeds</h3>
+    <h3>🌠 Wishes Granted</h3>
     ${done.length ? html`<ul class="qlist">${done.map((g) => html`<li>
       <span>${GOAL_ICON[g.type] || '👑'} <b>${g.title || 'Untitled quest'}</b>${g.fulfilledAt ? html` <small>fulfilled ${new Date(g.fulfilledAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</small>` : null}</span>
       <button class="btn xs ghost" onClick=${() => reopen(g.id)} title="Bring it back to the Quest Log">Reopen</button>
-    </li>`)}</ul>` : html`<p class="muted">Long-term quests you fulfil are kept here, trophies on the shelf.</p>`}
+    </li>`)}</ul>` : html`<p class="muted">Long-term quests you fulfil are kept here, each one a wish come true.</p>`}
   </div>`;
 }
 
@@ -129,7 +130,7 @@ function ruleSummary(g, r) {
 function Chronicle({ state }) {
   const [kind, setKind] = useState('week');
   const [busy, setBusy] = useState(false);
-  const kn = state.profile.keeper?.name || 'Hoot';
+  const kn = guideOf(state.profile).name;
   const r = range(kind);
   const g = gather(state, r);
   const saved = state.summaries[r.key];
@@ -138,7 +139,7 @@ function Chronicle({ state }) {
     setBusy(true);
     try {
       const payload = {
-        player: state.profile.name || 'Adventurer', period: `${r.label} (${iso(r.from)} to ${iso(addDays(r.to, -1))})`,
+        player: state.profile.name || 'MOA', period: `${r.label} (${iso(r.from)} to ${iso(addDays(r.to, -1))})`,
         diary: g.notes.map((n) => ({ date: n.date, text: n.text })),
         questsCompleted: g.quests.map((q) => ({ date: q.date, title: q.title, category: q.category, minutes: q.minutes })),
         finished: g.finished.map((i) => ({ kind: i.kind, title: i.title, by: i.by, rating: i.rating, note: i.note })),

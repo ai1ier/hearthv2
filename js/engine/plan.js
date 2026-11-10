@@ -5,10 +5,10 @@ import { MIN, addDays, addMin, startOfDay, startOfWeek, atTime, dayBounds, iso, 
 export const HERE = '@here', OUT = '@out';
 
 export const LOAD_LEVELS = [
-  { level: 0, max: 0.22, name: 'Open Skies', icon: '🌤️', blurb: 'Lots of open road. A fine week to try something new.' },
-  { level: 1, max: 0.40, name: 'Fair Winds', icon: '⛅', blurb: 'A lovely balance — steady progress, steady rest.' },
-  { level: 2, max: 0.58, name: 'Full Sails', icon: '⛵', blurb: 'A rich, lively week! Weave a few cosy pauses between the adventures.' },
-  { level: 3, max: Infinity, name: 'Grand Voyage', icon: '🌟', blurb: 'A big, bright week full of stories. Savour the quiet moments in between.' },
+  { level: 0, max: 0.22, name: 'Open Sky', icon: '🌙', blurb: 'So much open sky. A good week to try something new.' },
+  { level: 1, max: 0.40, name: 'Gentle Orbit', icon: '🪐', blurb: 'A nice balance: steady progress, steady rest.' },
+  { level: 2, max: 0.58, name: 'Shooting Stars', icon: '🌠', blurb: 'A rich, lively week! Weave a few cosy pauses between the bright moments.' },
+  { level: 3, max: Infinity, name: 'Constellation', icon: '🌌', blurb: 'A big, bright week full of stories. Savour the quiet moments in between.' },
 ];
 export const loadLevel = (x) => LOAD_LEVELS.find((l) => x <= l.max);
 

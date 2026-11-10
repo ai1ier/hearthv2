@@ -1,6 +1,10 @@
-# Hearthside Quest Planner
+# Star Chapter · TXT Planner
 
-A cozy pixel-art RPG planner. It reads your calendar, finds the free stretches between engagements (after commute, meals and buffers), and pins **quests** for them on a board — weighed against your mood, how busy the week is, your weekly targets, training side-effects and long-term goals.
+A dreamy pixel planner for MOA, the new look of the Hearthside Quest Planner. It reads your calendar, finds the free stretches between engagements (after commute, meals and buffers), and offers **star quests** for them, weighed against your mood, how busy the week is, your weekly targets, training side-effects and long-term goals.
+
+The world is a tiny star planet floating over a sea of clouds: a dome house with a telescope, a rose under a glass bell, a star lamp and the star board where today's quests are pinned. Your **star guide** (Taehyun, for now) strolls around the planet, greets you each morning and cheers you on. You are a **MOA traveller** standing by the board, fully recolourable, or swap in your own uploaded pixel sprite.
+
+It shares its saves with the original Hearthside app (same browser storage and the same Google Drive file), so your quests, goals, to-dos and settings appear in both. Its own character choices live in a separate `fandom` field, so the original keeps its witch and owl.
 
 ## Run it
 
@@ -12,44 +16,28 @@ python3 serve.py
 
 Then open http://localhost:5174. Or double-click `start.command`.
 
-Use `localhost` (not `127.0.0.1`) — Google sign-in only allows `localhost` origins.
-
 ## Pages
 
 | Page | What it does |
 |---|---|
-| **Today** | The day's road (events, travel, meals, open quests) and the quest board for the selected slot. Accept, complete or abandon quests. |
-| **Week** | The Omen (how busy the week is), weekly outlook, quest balance, and a 7-day map. Click a day to open it. |
-| **Quest Log** | Long-term commitments: deadlines (prep hours), events/trips (prep tasks N days before), ongoing goals (weekly habits). Plus your chronicle and XP. |
-| **Character** | Every preference: realm, wake/sleep, meals, training rules, places & travel times, activities (liking, intensity, sweaty, where, when, weekly target). Export/import a save file. |
-| **Scrolls** | Google Calendar connection, `.ics` import, sample calendar, and the optional Claude Oracle. |
+| **Today** | Today's orbit (events, travel, meals, open time) and the star quests for the selected slot. Accept, complete or abandon quests. |
+| **Week** | How busy the week is (Open Sky → Constellation), your outlook, quest balance, and a 7-day map. |
+| **Star Log** | Long-term commitments: deadlines, trips with prep tasks, ongoing habits. |
+| **Library** | Diary, books/shows/films, and your guide's chronicle. |
+| **Settings** | Calendar & stars (Google Calendar, `.ics`, cloud save, Claude), Avatar & guide (your MOA, familiar, which member guides you), Character (every planning preference). |
 
-## How suggestions are made
+## Groups and members
 
-For each open slot the engine scores every enabled activity and active goal:
+`js/fandom/` holds the idol-group layer. `txt.js` defines TXT: members, the Taehyun sprite and portrait, the MOA traveller and the planet's colours. Only Taehyun is drawn so far; the other members show as "coming soon". Another group can be added later as its own file listed in `GROUPS` (`js/fandom/index.js`).
 
-- **Fits the slot** — duration + travel there and on + wash-up time must fit.
-- **Mood** — morning check-in (stamina, what your spirit craves, ailments) and weekly outlook.
-- **Week load** — share of waking hours spoken for. Busy weeks favour rest and shorter quests; calm weeks favour adventure.
-- **Balance** — weekly targets; once met, that activity is pushed down ("don't overdo it"). Calendar events with matching titles count too.
-- **Training side-effects** — no hard training near bedtime, recovery between hard sessions, one hard session a day, saving energy before important events (interview, presentation, dinner…), easing off before a heavy tomorrow, and needing a shower before the next engagement.
-- **Long-term goals** — deadline pressure = prep hours left vs realistic free time before the due date; trip tasks surface in the days before they're due.
-- **Variety** — the day's picks spread across categories.
+## Star readings (optional)
 
-Every card lists its reasons so you can see why it was chosen.
-
-## Google Calendar
-
-Scrolls → follow "How to get a client ID". Add `http://localhost:5174` as an authorised JavaScript origin. Tokens live only in the tab's memory; you re-connect after a reload (one click).
-
-## The Oracle (optional)
-
-Paste an Anthropic API key in Scrolls and enable it. "Consult the Oracle" sends that day's timeline, preferences, mood and goals to Claude (`claude-opus-5-5`), which re-ranks the engine's already-valid candidates and narrates the day.
+Paste an Anthropic API key in Settings → Calendar & stars and enable it. "Ask the stars" sends that day's timeline, preferences, mood and goals to Claude (`claude-opus-5-5`), which re-ranks the engine's already-valid candidates and narrates the day in your guide's voice.
 
 ## Art
 
-Everything in the scene is drawn procedurally: the real sun and moon (with phase) for the realm's location, sky colours and lighting through the day, live weather from Open-Meteo, and seasons (jacaranda spring in Melbourne, sakura spring in Taipei, autumn leaves, bare winter trees, fireflies on summer nights). The quest board's notes match today's open quests. Use **🔭 Scry** to preview any hour, season or weather.
+Everything is drawn procedurally: the real sun and moon (with phase) for your realm, pastel skies through the day, a violet milky way at night, shooting stars, live weather from Open-Meteo and seasons on the planet's grass. Use **🔭 Stargaze** to preview any hour, season or weather.
 
 ## Data
 
-Everything is saved in your browser's localStorage. Use Character → Export save to back it up.
+Saved in your browser's localStorage (key `questplanner.v1`, shared with Hearthside). Use Character → Export save to back it up.

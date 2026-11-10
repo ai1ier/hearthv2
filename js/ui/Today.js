@@ -8,6 +8,7 @@ import { acceptQuest, completeQuest, abandonQuest } from '../actions.js';
 import { isSignedIn } from '../calendar/google.js';
 import { startFocus, celebrateQuest } from '../focus.js';
 import { store } from '../store.js';
+import { guideOf } from '../fandom/index.js';
 import { Portrait, Meter, CatTag, Difficulty, loadColor, Hearts, keeperLabel } from './common.js';
 import { ENERGY } from './Checkin.js';
 import { SPIRITS } from '../engine/suggest.js';
@@ -48,7 +49,7 @@ export function Today({ state, data, day, setDay, onCheckin, onOracle, oracleBus
         ${!isToday && html`<button class="btn sm ghost" onClick=${() => setDay(new Date())}>Today</button>`}
         <span class="grow"></span>
         <span class="load-chip" title="How much of your waking day is filled with plans (events + travel)">
-          Day’s bounty <${Meter} value=${dayPlan.load} color=${loadColor(dayPlan.load)} /> ${Math.round(dayPlan.load * 100)}%
+          Day’s stardust <${Meter} value=${dayPlan.load} color=${loadColor(dayPlan.load)} /> ${Math.round(dayPlan.load * 100)}%
         </span>
       </div>
 
@@ -69,10 +70,10 @@ export function Today({ state, data, day, setDay, onCheckin, onOracle, oracleBus
 
       <div class="cols">
         <div class="panel road">
-          <h3>The Road</h3>
+          <h3>Today’s Orbit</h3>
           <div class="timeline">
             ${dayPlan.allDay.map((e) => html`<div class="tl-row allday"><span class="tl-time">All day</span><div class="vine-note" title=${e.location || e.title}><${PixelIcon} name="vineL" size=${32} /><span>${e.title}${spanNote(e, dayPlan.date) && html`<small>${spanNote(e, dayPlan.date)}</small>`}</span><${PixelIcon} name="vineR" size=${32} /></div></div>`)}
-            <div class="tl-row wake"><span class="tl-time">${fmtTime(dayPlan.wake)}</span><div class="tl-mark" title=${dayPlan.early ? 'You were up before your usual rise time, so the road starts when you were first active' : ''}>🌄 ${dayPlan.early ? 'Up with the lark' : 'Rise'}</div></div>
+            <div class="tl-row wake"><span class="tl-time">${fmtTime(dayPlan.wake)}</span><div class="tl-mark" title=${dayPlan.early ? 'You were up before your usual rise time, so the day starts when you were first active' : ''}>🌅 ${dayPlan.early ? 'Up with the morning star' : 'Rise'}</div></div>
             ${dayPlan.items.map((it) => html`<${Item} key=${it.kind === 'meal' ? `${dayPlan.key}:${it.title}` : undefined} it=${it} p=${p} dayKey=${dayPlan.key} offers=${offers} selected=${selected} onSelect=${setSel} onLog=${logAt} />`)}
             <div class="tl-row wake"><span class="tl-time">${fmtTime(dayPlan.sleep)}</span><div class="tl-mark">🌙 Rest</div></div>
           </div>
@@ -82,7 +83,7 @@ export function Today({ state, data, day, setDay, onCheckin, onOracle, oracleBus
           <button class="btn sm log-past-btn" onClick=${() => logAt({})}>✎ Log something you did</button>
           ${selected && offers[selected]
             ? html`<${Board} offer=${offers[selected]} p=${p} dayPlan=${dayPlan} onDone=${() => setSel(null)} />`
-            : html`<div class="empty"><h3>Quest Board</h3><p>${dayPlan.slots.length ? 'All of today’s open time has passed. The board rests until tomorrow.' : 'No open stretches long enough for a quest. A full day — be kind to yourself.'}</p></div>`}`}
+            : html`<div class="empty"><h3>Star Quests</h3><p>${dayPlan.slots.length ? 'All of today’s open time has passed. The stars rest until tomorrow.' : 'No open stretches long enough for a quest. A full day — be kind to yourself.'}</p></div>`}`}
         </div>
       </div>
     </section>`;
@@ -178,7 +179,7 @@ function Board({ offer, p, dayPlan, onDone }) {
   const extra = ranked.filter((r) => !options.some((o) => o.key === r.key)).slice(0, past ? 20 : 8);
   return html`
     <div class="board-head">
-      <h3>${past ? '✎ Log a bygone quest' : 'Quest Board'}</h3>
+      <h3>${past ? '✎ Log a bygone quest' : 'Star Quests'}</h3>
       ${past && html`<div class="sub small">Did something in these hours? Record it and claim the XP.</div>`}
       <div class="sub">${fmtTime(slot.start)} – ${fmtTime(slot.end)} · ${fmtDur(slot.minutes)} free</div>
       <div class="sub small">At ${placeName(p, slot.from)}${slot.next ? html` · then <b>${slot.next.title}</b> at ${fmtTime(slot.next.start)}` : ' · then home for the night'}</div>
@@ -211,7 +212,7 @@ function QuestCard({ o, slot, p, dayPlan, best, compact, log, onDone }) {
     </div>`;
   }
   return html`<div class=${'qcard' + (best ? ' best' : '') + (compact ? ' compact' : '')} style=${{ '--c': (CATEGORIES[c.category] || {}).color }}>
-    ${best && html`<div class="ribbon">Innkeeper’s pick</div>`}
+    ${best && html`<div class="ribbon">${guideOf(store.get().profile).name}’s pick</div>`}
     <div class="q-head">
       <span class="q-icon">${c.icon}</span>
       <div><small>${o.title}</small><b>${c.name}</b>${c.sub ? html`<small>${c.sub}</small>` : null}</div>

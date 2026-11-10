@@ -8,6 +8,8 @@ import { completeQuest } from './actions.js';
 import { questXP } from './engine/suggest.js';
 import { HERE } from './engine/plan.js';
 import { iso } from './time.js';
+import { postcardFor, addPostcard, placeOf } from './worlds.js';
+import { fandomOf } from './fandom/index.js';
 
 const MIN = 60000;
 export const POMOS = { '25/5': { focus: 25, rest: 5 }, '50/10': { focus: 50, rest: 10 } };
@@ -15,10 +17,10 @@ export const POMOS = { '25/5': { focus: 25, rest: 5 }, '50/10': { focus: 50, res
 export const pomoOf = (f) => (f.pomodoro === true ? POMOS['25/5'] : POMOS[f.pomodoro] || null);
 // category -> the scene shown while you are out on that quest
 export const OUTINGS = {
-  fitness: { scene: 'training', where: 'At the training grounds', icon: '🏃' },
-  social: { scene: 'tavern', where: 'At the Lantern Tavern', icon: '🍻' },
-  outdoors: { scene: 'woods', where: 'In the wild woods', icon: '🌲' },
-  chores: { scene: 'cottage', where: 'Tending the cottage', icon: '🧹' },
+  fitness: { scene: 'training', where: 'In the practice room', icon: '💃' },
+  social: { scene: 'tavern', where: 'At the Starlight Café', icon: '☕' },
+  outdoors: { scene: 'woods', where: 'In the star garden', icon: '🌟' },
+  chores: { scene: 'cottage', where: 'Inside the dome house', icon: '🧹' },
 };
 
 // minutes the session has been running, not counting pauses
@@ -86,7 +88,7 @@ export function startGoalSession(goal, item = null, minutes = null) {
   const q = {
     id: `q-${now.toString(36)}`, date: iso(new Date(now)), start: new Date(now).toISOString(), end: new Date(now + mins * MIN).toISOString(),
     title: item ? item.text : goal.type === 'deadline' ? `Study: ${goal.title}` : goal.title, flavor: item ? (goal.type === 'event' ? 'Preparation' : goal.title) : 'Main Quest',
-    icon: goal.type === 'event' ? '🧭' : goal.type === 'deadline' ? '✍️' : '🌱', category: 'main', activityId: goal.linkedActivityId || null, goalId: goal.id, itemId: item?.id || null,
+    icon: goal.type === 'event' ? '🧭' : goal.type === 'deadline' ? '✍️' : '🌙', category: 'main', activityId: goal.linkedActivityId || null, goalId: goal.id, itemId: item?.id || null,
     place: HERE, intensity: 0, sweat: false, minutes: mins, shower: 0, xp: questXP(mins, 0, true), done: false,
   };
   store.set((s) => ({ quests: [...s.quests, q] }));
@@ -128,6 +130,7 @@ export function finishFocus() {
     focus: null,
     quests: s.quests.map((x) => (x.id === f.questId ? { ...x, minutes: mins, end: new Date(new Date(x.start).getTime() + mins * MIN).toISOString(), xp: questXP(mins, x.intensity, x.category === 'main') } : x)),
     diary: f.notes.trim() ? [...s.diary, { id: 'd' + Date.now().toString(36), date: iso(new Date()), text: `${f.icon} ${f.title} (${mins}m): ${f.notes.trim()}`, at: Date.now() }] : s.diary,
+    ...addPostcard(s, postcardFor(f, mins, placeOf(f, OUTINGS), fandomOf(s.profile).guide)),
   }));
   if (q) completeQuest(f.questId);
 }
@@ -141,6 +144,7 @@ export function finishOuting() {
     focus: { ...s.focus, doneAt: Date.now() },
     quests: s.quests.map((x) => (x.id === f.questId ? { ...x, notes: f.notes } : x)),
     diary: f.notes.trim() ? [...s.diary, { id: 'd' + Date.now().toString(36), date: iso(new Date()), text: `${f.icon} ${f.title}: ${f.notes.trim()}`, at: Date.now() }] : s.diary,
+    ...addPostcard(s, postcardFor(f, Math.max(1, Math.round((Date.now() - f.startedAt) / MIN)), placeOf(f, OUTINGS), fandomOf(s.profile).guide)),
   }));
   if (q) completeQuest(f.questId);
   setTimeout(() => { if (store.get().focus?.doneAt) store.set({ focus: null }); }, 3200);
@@ -159,4 +163,8 @@ export function celebrateQuest(questId) {
   setTimeout(() => { if (store.get().focus?.logged) store.set({ focus: null }); }, 3600);
 }
 
-export function endFocus() { store.set({ focus: null }); toast('The quest waits for you on the road'); }
+export function endFocus() {
+  const f = store.get().focus;
+  if (f?.free) { store.set((s) => ({ focus: null, quests: s.quests.filter((q) => q.id !== f.questId || q.done) })); toast('Back home from your trip. The planet will be there next time ✦'); return; }
+  store.set({ focus: null }); toast('The quest waits for you on the road');
+}

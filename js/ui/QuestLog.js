@@ -7,11 +7,12 @@ import { startGoalSession } from '../focus.js';
 import { TodoList } from './Todo.js';
 import { chime } from '../ambience.js';
 import { Grip, moveItem } from './Sortable.js';
+import { WeekSky, Postcards } from './Postcards.js';
 
 const TYPES = {
   deadline: { label: 'Deadline / exam', icon: '✍️', hint: 'Needs prep hours spread out before a date' },
   event: { label: 'Event / trip', icon: '🧭', hint: 'A dated event with prep tasks to do ahead of time' },
-  ongoing: { label: 'Ongoing goal', icon: '🌱', hint: 'A habit worked on every week' },
+  ongoing: { label: 'Ongoing goal', icon: '🌙', hint: 'A habit worked on every week' },
 };
 
 const setGoals = (fn) => store.setProfile((p) => ({ goals: fn(p.goals) }));
@@ -37,7 +38,7 @@ export function QuestLog({ state }) {
   return html`
     <section class="log">
       <div class="panel">
-        <h3>👑 Main Quests — long-term commitments</h3>
+        <h3>🌌 Constellations · your long-term quests</h3>
         <p class="muted">These feed the board ahead of time: prep sessions for deadlines, tasks before trips, and weekly habits.${p.goals.some((g) => g.sample) ? ' The ones marked “sample” are examples — edit or remove them.' : ''}</p>
         <div class="goals">
           ${p.goals.filter((g) => !g.done).map((g) => html`<${Goal} key=${g.id} g=${g} p=${p} quests=${state.quests} startOpen=${adding === g.id} />`)}
@@ -47,19 +48,24 @@ export function QuestLog({ state }) {
 
       <div class="cols">
         <div class="panel">
-          <h3>📜 Errand Scroll</h3>
+          <h3>☄️ Comet Errands</h3>
           <${TodoList} state=${state} />
         </div>
         <div class="panel">
-          <h3>📖 Chronicle · ${state.xp} XP</h3>
+          <h3>🔭 Star Chronicle · ${state.xp} XP</h3>
           ${done.length ? html`<ul class="qlist">${done.slice(0, 40).map((q) => html`<li><span>${q.icon} ${q.title} <small>${new Date(q.start).toLocaleDateString([], { day: 'numeric', month: 'short' })} · +${q.xp} XP</small></span></li>`)}</ul>`
-            : html`<p class="muted">Your legend is yet unwritten. Complete a quest to begin it.</p>`}
+            : html`<p class="muted">No stars in your chronicle yet. Complete a quest to light the first one.</p>`}
         </div>
+      </div>
+
+      <div class="cols">
+        <${WeekSky} state=${state} />
+        <${Postcards} state=${state} />
       </div>
     </section>`;
 }
 
-// Fulfilling a goal: a moment of sparkle on the card, then it folds away into the Library's Hall of Deeds.
+// Fulfilling a goal: a moment of sparkle on the card, then it folds away into the Library's Wishes Granted.
 const fulfilGoal = (id) => patchGoal(id, { done: true, fulfilledAt: Date.now() });
 
 function Goal({ g, p, quests, startOpen }) {
@@ -70,7 +76,7 @@ function Goal({ g, p, quests, startOpen }) {
     setCheer(1); setEdit(false);
     try { chime(); } catch { /* sound blocked */ }
     setTimeout(() => setCheer(2), 1700);
-    setTimeout(() => { fulfilGoal(g.id); toast(`🏆 “${g.title || 'Quest'}” fulfilled! Kept in the Library’s Hall of Deeds`); }, 2200);
+    setTimeout(() => { fulfilGoal(g.id); toast(`🌠 “${g.title || 'Quest'}” fulfilled! Kept in the Library’s Wishes Granted`); }, 2200);
   };
   const t = TYPES[g.type];
   const d = g.due ? daysUntil(new Date(), parseISODate(g.due)) : null;
@@ -104,8 +110,8 @@ function Goal({ g, p, quests, startOpen }) {
         return html`<li class=${st}>
           <label><input type="checkbox" checked=${it.done} onChange=${(e) => patchGoal(g.id, { items: g.items.map((x) => (x.id === it.id ? { ...x, done: e.target.checked } : x)) })} />
             <span>${it.text || '(untitled task)'}</span></label>
-          ${!it.done && html`<button class="btn xs" onClick=${() => startGoalSession(g, it)} aria-label=${`Start ${it.text}`}>▶</button>`}
           <small>${it.done ? 'done ✓' : left < 0 ? `overdue — was due ${when}` : left === 0 ? 'do today' : `by ${when}`} · ${it.minutes}m${planned ? ` · 📅 planned ${new Date(planned.start).toLocaleDateString([], { weekday: 'short' })} ${fmtTime(new Date(planned.start))}` : ''}</small>
+          ${!it.done && html`<button class="btn xs" title=${`Start a ${it.minutes}-minute session on this`} onClick=${() => startGoalSession(g, it)} aria-label=${`Start ${it.text}`}>▶</button>`}
         </li>`;
       })}
     </ul>` : null}

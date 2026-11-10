@@ -39,8 +39,10 @@ function palette(season, spring, climate) {
     autumn: { grass: ['#7f9045', '#9aa652', '#66753a'], hill: '#7a8a46', canopy: ['#a1401e', '#da772b', '#f2b04a'], under: ['#7a5a2a', '#8a6a30'], flowers: ['#e0782a', '#c9452a', '#f2c14a'], drift: ['#d8682a', '#f2a03a', '#b8401e'] },
     winter: { grass: ['#5e7a55', '#72906a', '#4c6446'], hill: '#5d7658', canopy: ['#3a5a43', '#527658', '#6d9070'], under: ['#2e4a36', '#3a5a43'], flowers: [], drift: [] },
   }[season];
-  if (season === 'summer' && climate === 'temperate') P.grass = ['#8b9a45', '#a6b456', '#73823a']; // dry Aussie summer
-  if (season === 'winter' && climate === 'temperate') { // a storybook snowy winter
+  // climates: temperate (dry summer, storybook snow: Melbourne), cold (green summer, snowy winter),
+  // mild (green all year, no snow), dry (golden summers), subtropical (no snow)
+  if (season === 'summer' && (climate === 'temperate' || climate === 'dry')) P.grass = ['#8b9a45', '#a6b456', '#73823a']; // dry Aussie summer
+  if (season === 'winter' && (climate === 'temperate' || climate === 'cold')) { // a storybook snowy winter
     Object.assign(P, { snowy: true, grass: ['#e6edf4', '#ffffff', '#c9d5e3'], hill: '#dfe7f0', under: ['#93a4b8', '#c3cfdc'], canopy: ['#aebfd2', '#dfe8f2', '#ffffff'] });
   }
   return P;
@@ -83,6 +85,8 @@ function heroCanvases(input, avImg, T, amb, dpx = 1) {
     } else rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch !== '.' && av.pal[ch]) { g.fillStyle = css(T(av.pal[ch])); g.fillRect(i, j, 1, 1); } } });
     return cv;
   });
+  // hidden (avatar.hidden): keep the spot, draw nothing
+  if (input.avatar?.hidden) { cvs.forEach((cv) => cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)); return { cvs, w: img ? Math.round((iw * p) / dpx) : iw, h: img ? Math.round((ih * p) / dpx) : ih, hand: av.hand || [0, 0], hi: null, hidden: true }; }
   if (!img) return { cvs, w: iw, h: ih, hand: av.hand, hi: null };
   const w = Math.round((iw * p) / dpx), h = Math.round((ih * p) / dpx);
   return { cvs, w, h, hand: [w - 2, Math.round(h * 0.7)], hi: { p, dpx } };
@@ -142,10 +146,13 @@ export class Scene {
     const loop = (ts) => {
       this.raf = requestAnimationFrame(loop);
       if (ts - this.last < 80 || !this.input) return; // ~12 fps keeps the pixel feel
+      // started while hidden (zero width)? size up once it can be seen
+      if (!this.W) { if (!this.cv.parentElement?.clientWidth) return; this.resize(); }
       const dt = Math.min(0.3, (ts - this.last) / 1000);
       this.last = ts; this.t += dt;
       this.hiCtx.clearRect(0, 0, this.hiCv.width, this.hiCv.height);
       this.frame(dt);
+      this.drawHeal(dt);
     };
     this.raf = requestAnimationFrame(loop);
   }
@@ -158,6 +165,10 @@ export class Scene {
 
   // draws on the fine overlay when `hi` is set (an upload), else straight onto the scene
   blitHi(c, cv, x, y, hi, flip = false, cropH = null) {
+    if (hi === this.heroHi) { // remember where you are, for the healing shimmer
+      const k = hi ? hi.p / hi.dpx : 1, rows = cropH == null ? cv.height : Math.min(cv.height, hi ? Math.round((cropH * hi.dpx) / hi.p) : cropH);
+      this.heroBox = { x, y, w: cv.width * k, h: rows * k };
+    }
     if (!hi) {
       const rows = cropH == null ? cv.height : Math.min(cv.height, cropH);
       c.save();
@@ -173,6 +184,72 @@ export class Scene {
     if (flip) { g.translate(X + w, Y); g.scale(-1, 1); g.drawImage(cv, 0, 0, cv.width, rows, 0, 0, w, h); }
     else g.drawImage(cv, 0, 0, cv.width, rows, X, Y, w, h);
     g.restore();
+  }
+
+  // The guide's smooth frames (see PlanetScene.buildGuide) go on the fine overlay at scene position
+  // (x, y). cropH keeps only his top rows (behind a desk or counter), alpha fades him, clip keeps him
+  // inside a scene-pixel box {x0, y0, x1, y1} (a mirror).
+  blitGuide(cv, x, y, { flip = false, cropH = null, alpha = 1, clip = null } = {}) {
+    const g = this.hiCtx, gc = this.guideCv;
+    if (!g || !cv || !gc) return;
+    const k = this.dpx, rows = cropH == null ? cv.height : Math.max(0, Math.min(cv.height, Math.round((cropH * cv.height) / gc.h)));
+    if (!rows) return;
+    const X = Math.round(x * k), Y = Math.round(y * k);
+    g.save();
+    g.globalAlpha = alpha; g.imageSmoothingEnabled = true;
+    if (clip) { g.beginPath(); g.rect(clip.x0 * k, clip.y0 * k, (clip.x1 - clip.x0) * k, (clip.y1 - clip.y0) * k); g.clip(); }
+    if (flip) { g.translate(X + cv.width, Y); g.scale(-1, 1); g.drawImage(cv, 0, 0, cv.width, rows, 0, 0, cv.width, rows); }
+    else g.drawImage(cv, 0, 0, cv.width, rows, X, Y, cv.width, rows);
+    g.restore();
+  }
+
+  // A burst of sparkle around you when you finish a quest or earn XP: a soft golden glow, then
+  // four-point stars of gold, white and lilac twinkling outward, with a ring of glitter drifting up.
+  // (Still called heal() for the code that triggers it.)
+  heal() { this.healT = 0.001; }
+  drawHeal(dt) {
+    if (!this.healT) return;
+    const b = this.input?.avatar?.hidden ? this.spots?.guide || this.spots?.guideBox || null : this.heroBox, D = 2.4;
+    this.healT += dt;
+    if (!b || this.healT > D) { this.healT = 0; return; }
+    const c = this.ctx, p = this.healT / D, t = this.t;
+    const fade = p < 0.1 ? p / 0.1 : p > 0.65 ? (1 - p) / 0.35 : 1;
+    const cx = b.x + b.w / 2, cy = b.y + b.h * 0.45;
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    const g = c.createRadialGradient(cx, cy, 0, cx, cy, b.h * 0.9);
+    g.addColorStop(0, `rgba(255,230,170,${0.32 * fade})`); g.addColorStop(0.6, `rgba(220,190,255,${0.14 * fade})`); g.addColorStop(1, 'rgba(220,190,255,0)');
+    c.fillStyle = g; c.fillRect(cx - b.h, cy - b.h, b.h * 2, b.h * 2);
+    c.globalCompositeOperation = 'source-over';
+    const star = (x, y, r, col, a) => {
+      x = Math.round(x); y = Math.round(y);
+      c.fillStyle = `rgba(${col},${a})`; c.fillRect(x, y - r, 1, 2 * r + 1); c.fillRect(x - r, y, 2 * r + 1, 1);
+      if (r > 1) { c.fillStyle = `rgba(${col},${a * 0.5})`; c.fillRect(x - 1, y - 1, 3, 3); }
+      c.fillStyle = `rgba(255,255,255,${a})`; c.fillRect(x, y, 1, 1);
+    };
+    // stars bursting outward on rays, each twinkling as it goes
+    const cols = ['255,226,130', '255,255,255', '214,190,255', '255,200,230'];
+    for (let i = 0; i < 12; i++) {
+      const q = Math.min(1, p * 1.6 - (i % 4) * 0.08); if (q <= 0) continue;
+      const ang = (i / 12) * Math.PI * 2 + 0.3, dist = 4 + q * (b.h * 0.55 + (i % 3) * 3), tw = 0.6 + 0.4 * Math.sin(t * 14 + i * 2);
+      star(cx + Math.cos(ang) * dist * 1.1, cy + Math.sin(ang) * dist * 0.8 - q * 3, i % 3 === 0 ? 2 : 1, cols[i % 4], fade * tw * (1 - q * 0.4));
+    }
+    // a big twinkle right at the start
+    if (p < 0.4) star(cx, cy - 2, 3 + Math.round(2 * Math.sin(p * Math.PI / 0.4)), '255,240,190', fade * (1 - p / 0.4));
+    // glitter drifting upward around you
+    for (let i = 0; i < 14; i++) {
+      const q = (p * 1.3 + i * 0.07) % 1, ang = i * 2.39 + p * 3;
+      const x = cx + Math.cos(ang) * (b.w * 0.6 + 2), y = b.y + b.h - q * (b.h + 10);
+      c.fillStyle = `rgba(${cols[i % 4]},${fade * Math.sin(q * Math.PI)})`; c.fillRect(Math.round(x), Math.round(y), 1, 1);
+    }
+    c.restore();
+  }
+
+  // a flat rectangle on the fine overlay, in scene pixels (for small props held in front of the guide)
+  hiRect(col, x, y, w, h) {
+    const g = this.hiCtx, k = this.dpx;
+    if (!g) return;
+    g.fillStyle = col; g.fillRect(Math.round(x * k), Math.round(y * k), Math.round(w * k), Math.round(h * k));
   }
 
   env() {
@@ -461,7 +538,7 @@ export class Scene {
     const d = T(e.season === 'winter' ? '#2e5040' : '#2c5a36'), m = T(e.season === 'winter' ? '#3e6650' : '#3d7444');
     for (let j = 0; j < h + 4; j++) { const w = Math.floor((j % 4) + j / 2.4); for (let i = -w; i <= w; i++) R.put(x0 + i, base - h - 4 + j, e.pal.snowy && j % 4 === 0 ? T(i < 0 ? '#ffffff' : '#dfe8f2') : i < 0 ? m : d); }
     R.rect(x0, base, 1, 2, T('#4a3020'));
-    if (e.season === 'winter' && e.realm.climate === 'temperate') R.put(x0, base - h - 4, T('#e8eef4'));
+    if (e.season === 'winter' && (e.realm.climate === 'temperate' || e.realm.climate === 'cold')) R.put(x0, base - h - 4, T('#e8eef4'));
   }
 
   // A log cabin under steep triangular roofs: a tall front gable, a lower one behind it, and a little
@@ -585,7 +662,7 @@ export class Scene {
       for (const w of s.windows) glow(w.x, w.y, 13, 0.35 * e.dark);
       glow(s.lamp.x, s.lamp.y, 16, 0.45 * e.dark);
       glow(s.doorLamp.x, s.doorLamp.y, 7, 0.4 * e.dark);
-      glow(s.hero.x + s.hero.hand[0] + 1, s.hero.y + s.hero.hand[1] + 1, 7, 0.4 * e.dark);
+      if (!this.input.avatar?.hidden) glow(s.hero.x + s.hero.hand[0] + 1, s.hero.y + s.hero.hand[1] + 1, 7, 0.4 * e.dark);
       c.globalCompositeOperation = 'source-over';
       // light spill from windows onto the grass
       c.fillStyle = `rgba(255,200,110,${0.12 * e.dark})`;
@@ -669,6 +746,15 @@ export class Scene {
   buildPet(e) { this.pet = this.input.avatar?.familiar !== false ? petCanvas(this.input, this.petImg, e.amb, this.dpx) : null; return this.pet; }
   // draw it with its feet at scene row `base`
   drawPet(c, x, base, hop = 0) { const pt = this.pet; if (pt) this.blitHi(c, pt.cv, x, base - pt.h - hop, pt.hi); }
+
+  // Where the cursor is, in scene pixels, and how fast it's moving (scene px per second).
+  pointer(clientX, clientY) {
+    if (clientX == null) { this.ptr = null; return; }
+    const r = this.cv.getBoundingClientRect(), now = performance.now();
+    const x = (clientX - r.left) / this.scale, y = (clientY - r.top) / this.scale, p = this.ptr;
+    const dt = p ? Math.max(0.016, (now - p.t) / 1000) : 1;
+    this.ptr = { x, y, vx: p && dt < 0.25 ? (x - p.x) / dt : 0, vy: p && dt < 0.25 ? (y - p.y) / dt : 0, t: now };
+  }
 
   // Logical-pixel hit test for clicks and hover on the scene.
   hitTest(clientX, clientY) {

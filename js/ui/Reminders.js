@@ -29,7 +29,7 @@ function check() {
   for (const t of due) toast(`🔔 Reminder: ${t.text}`); // in case the scene is scrolled out of view
   try { reminderBell(); } catch { /* sound blocked until the page is clicked */ }
   if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    for (const t of due) new Notification('🔔 Hearthside reminder', { body: t.text, icon: 'icons/icon-192.png', tag: t.id });
+    for (const t of due) new Notification('🔔 Star Chapter reminder', { body: t.text, icon: 'icons/icon-192.png', tag: t.id });
   }
 }
 

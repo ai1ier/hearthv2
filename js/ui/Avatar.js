@@ -1,13 +1,14 @@
 // Avatar studio: recolour a preset, toggle the familiar, upload your own pixel sprite
-// (and keep the ones you like as styles), and dress up your oracle.
+// (and keep the ones you like as styles), and choose which member is your star guide.
+// v2 keeps its avatar in profile.fandom.avatar, so the original app's witch is left as it was.
 import { html, useEffect, useRef, useState } from '../vendor.js';
 import { store } from '../store.js';
-import { PRESETS, CAT, KEEPERS, resolveAvatar, defaultAvatar, defaultKeeper, pixelateUpload, AVATAR_H } from '../art/sprites.js';
+import { PRESETS, CAT, resolveAvatar, pixelateUpload, AVATAR_H } from '../art/sprites.js';
 import { Portrait, toast } from './common.js';
+import { avatarOf, guideOf, groupOf, patchAvatar, patchFandom, defaultFandomAvatar } from '../fandom/index.js';
 import { PET_H } from '../art/scene.js';
 
-const setAv = (patch) => store.setProfile((p) => ({ avatar: { ...p.avatar, ...patch } }));
-const setKeeper = (patch) => store.setProfile((p) => ({ keeper: { ...p.keeper, ...patch } }));
+const setAv = (patch) => patchAvatar(store, patch);
 
 function Preview({ av, scale = 8, only = null }) {
   const ref = useRef();
@@ -15,13 +16,16 @@ function Preview({ av, scale = 8, only = null }) {
     const cv = ref.current, g = cv.getContext('2d');
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, cv.width, cv.height);
-    // little meadow backdrop, with a door for scale
-    g.fillStyle = '#9cc8e8'; g.fillRect(0, 0, cv.width, cv.height);
-    g.fillStyle = '#5f9e47'; g.fillRect(0, cv.height - 4 * scale, cv.width, 4 * scale);
+    // a little patch of planet under a pastel sky, with the star lamp for scale
+    const sky = g.createLinearGradient(0, 0, 0, cv.height); sky.addColorStop(0, '#8bb0f2'); sky.addColorStop(1, '#e6dcff');
+    g.fillStyle = sky; g.fillRect(0, 0, cv.width, cv.height);
+    g.fillStyle = '#ffffff'; for (const [x, y] of [[3, 4], [27, 3], [9, 12], [30, 14], [20, 7]]) g.fillRect(x * scale, y * scale, scale, scale);
+    g.fillStyle = '#a6e4cc'; g.fillRect(0, cv.height - 4 * scale, cv.width, scale);
+    g.fillStyle = '#8a7ed0'; g.fillRect(0, cv.height - 3 * scale, cv.width, 3 * scale);
     const groundY = cv.height - 4 * scale;
     if (only !== 'familiar') {
-      g.fillStyle = '#e8dcc0'; g.fillRect(cv.width - 9 * scale, groundY - 20 * scale, 9 * scale, 20 * scale);
-      g.fillStyle = '#6a3f22'; g.fillRect(cv.width - 7 * scale, groundY - 13 * scale, 5 * scale, 13 * scale);
+      g.fillStyle = '#6a5aa8'; g.fillRect(cv.width - 5 * scale, groundY - 18 * scale, scale, 18 * scale);
+      g.fillStyle = '#ffe08a'; g.fillRect(cv.width - 6 * scale, groundY - 22 * scale, 3 * scale, 3 * scale); g.fillRect(cv.width - 5 * scale, groundY - 23 * scale, scale, 5 * scale); g.fillRect(cv.width - 7 * scale, groundY - 21 * scale, 5 * scale, scale);
     }
     const drawCat = () => {
       if (av.familiar === false || only === 'avatar') return;
@@ -57,14 +61,14 @@ export function AvatarStudio({ state }) {
   return html`<div class="studio-stack">
     <${AvatarPanel} state=${state} />
     <${FamiliarPanel} state=${state} />
-    <${KeeperPanel} state=${state} />
+    <${GuidePanel} state=${state} />
   </div>`;
 }
 
 function AvatarPanel({ state }) {
-  const av = state.profile.avatar;
+  const av = avatarOf(state.profile);
   const designs = state.profile.avatarDesigns || [];
-  const preset = PRESETS[av.preset] || PRESETS.witch;
+  const preset = PRESETS[av.preset] || PRESETS.moa;
   const colors = { ...preset.colors, ...av.colors };
   const trying = av.image && !designs.some((d) => d.id === av.designId);
   const [name, setName] = useState('');
@@ -82,12 +86,12 @@ function AvatarPanel({ state }) {
   };
   const save = () => {
     const d = { id: 'av' + Date.now().toString(36), name: name.trim() || `Design ${designs.length + 1}`, image: av.image, size: av.size || AVATAR_H };
-    store.setProfile((p) => ({ avatarDesigns: [...(p.avatarDesigns || []), d], avatar: { ...p.avatar, designId: d.id } }));
+    store.setProfile((p) => ({ avatarDesigns: [...(p.avatarDesigns || []), d] })); setAv({ designId: d.id });
     toast(`✨ “${d.name}” added to your styles`);
   };
   const remove = (d) => {
     if (!confirm(`Remove “${d.name}” from your styles?`)) return;
-    store.setProfile((p) => ({ avatarDesigns: p.avatarDesigns.filter((x) => x.id !== d.id), avatar: p.avatar.designId === d.id ? { ...p.avatar, designId: null } : p.avatar }));
+    store.setProfile((p) => ({ avatarDesigns: p.avatarDesigns.filter((x) => x.id !== d.id) })); if (av.designId === d.id) setAv({ designId: null });
   };
   const setSize = (size) => {
     setAv({ size });
@@ -96,9 +100,11 @@ function AvatarPanel({ state }) {
 
   return html`<div class="cols avatar-studio">
     <div class="panel">
-      <h3>🧙 Your avatar</h3>
+      <h3>⭐ Your avatar</h3>
       <${Preview} av=${av} />
-      <p class="muted">She stands by the quest board in the meadow. Click her there to come back here; click the cat for a surprise.</p>
+      <p class="muted">You stand between the rose and the star board on the little planet. Click yourself there to come back here; click your familiar for a surprise.</p>
+      <label class="inline"><input type="checkbox" checked=${!av.hidden} onChange=${(e) => setAv({ hidden: !e.target.checked })} /> Show me in the scenes</label>
+      ${av.hidden ? html`<p class="hint">You’re resting off-screen for now. Your familiar and guide keep the place cosy.</p>` : null}
     </div>
     <div class="panel">
       <h3>Style</h3>
@@ -113,7 +119,7 @@ function AvatarPanel({ state }) {
         ${Object.entries(preset.slots).map(([k, label]) => html`<label class="swatch-field"><input type="color" value=${colors[k]} onInput=${(e) => setAv({ colors: { ...colors, [k]: e.target.value } })} /><span>${label}</span></label>`)}
       </div>
       <button class="link" onClick=${() => setAv({ colors: { ...preset.colors } })}>Reset colours</button>`}
-      ${av.image && html`<label class="field size-field"><span class="field-label">Size in the scenes · about ${av.size || AVATAR_H} px tall (the witch is 25) — your pixels are kept, just drawn smaller</span>
+      ${av.image && html`<label class="field size-field"><span class="field-label">Size in the scenes · about ${av.size || AVATAR_H} px tall (the MOA traveller is 25) — your pixels are kept, just drawn smaller</span>
         <input type="range" min="14" max="32" value=${av.size || AVATAR_H} onInput=${(e) => setSize(+e.target.value)} /></label>`}
       ${trying && html`<div class="try-on">
         <b>Trying it on.</b> Not saved yet — keep it as a style only if it turned out nicely.
@@ -123,17 +129,17 @@ function AvatarPanel({ state }) {
       </div>`}
 
       <h4>Upload your own avatar</h4>
-      <p class="muted">Draw a character in any pixel editor — <a href="https://www.piskelapp.com" target="_blank" rel="noopener">Piskel</a> (free, in the browser), Aseprite or Pixilart — on a <b>transparent background</b>, about <b>16×24 px</b>, with the feet on the bottom row. Export as PNG and upload it here. It’s drawn smaller to match the witch’s height while keeping every pixel you drew (adjust with the size slider), and the scene re-lights it for dawn, dusk and night automatically. Uploads are only tried on until you save them.</p>
+      <p class="muted">Draw a character in any pixel editor — <a href="https://www.piskelapp.com" target="_blank" rel="noopener">Piskel</a> (free, in the browser), Aseprite or Pixilart — on a <b>transparent background</b>, about <b>16×24 px</b>, with the feet on the bottom row. Export as PNG and upload it here. It’s drawn smaller to match the MOA traveller’s height while keeping every pixel you drew (adjust with the size slider), and the scene re-lights it for dawn, dusk and night automatically. Uploads are only tried on until you save them.</p>
       <div class="row">
-        <label class="btn sm">🧙 Upload avatar PNG<input type="file" accept="image/png,image/gif,image/webp" hidden onChange=${upload} /></label>
-        <button class="btn sm ghost" onClick=${() => store.setProfile((p) => ({ avatar: { ...defaultAvatar(), ...familiarOf(p.avatar) } }))}>Restore the witch</button>
+        <label class="btn sm">⭐ Upload avatar PNG<input type="file" accept="image/png,image/gif,image/webp" hidden onChange=${upload} /></label>
+        <button class="btn sm ghost" onClick=${() => setAv({ ...defaultFandomAvatar(), ...familiarOf(av) })}>Restore the MOA traveller</button>
       </div>
     </div>
   </div>`;
 }
 
 function FamiliarPanel({ state }) {
-  const av = state.profile.avatar;
+  const av = avatarOf(state.profile);
   const on = av.familiar !== false;
   const uploadPet = async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -145,7 +151,7 @@ function FamiliarPanel({ state }) {
     <div class="panel">
       <h3>🐾 Your familiar</h3>
       <${Preview} av=${av} only="familiar" scale=${12} />
-      <p class="muted">Your companion follows you everywhere — the meadow, the study, the training grounds, the tavern and the kitchen. Click it in the meadow for a surprise.</p>
+      <p class="muted">Your companion follows you everywhere — the little planet, the study and every outing. Click it on the planet for a surprise.</p>
     </div>
     <div class="panel">
       <h3>Companion</h3>
@@ -165,40 +171,23 @@ function FamiliarPanel({ state }) {
   </div>`;
 }
 
-function KeeperPanel({ state }) {
-  const k = state.profile.keeper || defaultKeeper();
-  const preset = KEEPERS[k.preset] || KEEPERS.owl;
-  const colors = { ...preset.colors, ...(k.colors || {}) };
-  const upload = async (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    try { setKeeper({ image: await pixelateUpload(f, 32) }); toast('🖼️ Your oracle has a new look'); }
-    catch (err) { toast(err.message); }
-    e.target.value = '';
-  };
+// Pick which member of the group is your star guide (the one who greets you, cheers you on
+// and strolls around the planet). Members without a drawing yet show as "coming soon".
+function GuidePanel({ state }) {
+  const grp = groupOf(state.profile), g = guideOf(state.profile);
   return html`<div class="cols avatar-studio">
     <div class="panel">
-      <h3>🔮 Your oracle</h3>
-      <div class="keeper-preview"><${Portrait} keeper=${k} scale=${8} /></div>
-      <p class="muted">Your innkeeper and oracle greets you each morning, cheers you on in the study, and writes your chronicle.</p>
+      <h3>🌟 Your star guide</h3>
+      <div class="keeper-preview"><${Portrait} scale=${8} /></div>
+      <p class="muted"><b>${g.name}</b> greets you each morning, cheers you on in the study, writes your chronicle and wanders around the little planet. Tap ${g.name} there to say hi.</p>
     </div>
     <div class="panel">
-      <h3>Name</h3>
-      <div class="row">
-        <label class="field"><span class="field-label">Name</span><input type="text" value=${k.name} maxlength="20" onInput=${(e) => setKeeper({ name: e.target.value })} /></label>
-        <label class="field"><span class="field-label">Title</span><input type="text" value=${k.title} maxlength="32" placeholder="the Hearth Oracle" onInput=${(e) => setKeeper({ title: e.target.value })} /></label>
-      </div>
-      <h4>Kind</h4>
-      <div class="row">${Object.entries(KEEPERS).map(([id, p]) => html`<button class=${'btn sm' + (k.preset === id && !k.image ? ' on' : '')} onClick=${() => setKeeper({ preset: id, colors: { ...p.colors }, image: null })}>${p.label}</button>`)}</div>
-      ${!k.image && html`<div class="swatches">
-        ${Object.entries(preset.slots).map(([id, label]) => html`<label class="swatch-field"><input type="color" value=${colors[id]} onInput=${(e) => setKeeper({ colors: { ...colors, [id]: e.target.value } })} /><span>${label}</span></label>`)}
-      </div>
-      <button class="link" onClick=${() => setKeeper({ colors: { ...preset.colors } })}>Reset colours</button>`}
-      <h4>Upload a portrait</h4>
-      <p class="muted">A square pixel portrait on a transparent background, about <b>16×16 px</b> (32 max). It’s shown framed beside the oracle’s words.</p>
-      <div class="row">
-        <label class="btn sm">Upload PNG<input type="file" accept="image/png,image/gif,image/webp" hidden onChange=${upload} /></label>
-        ${k.image && html`<button class="btn sm ghost" onClick=${() => setKeeper({ image: null })}>Back to the ${preset.label.toLowerCase()}</button>`}
-        <button class="btn sm ghost" onClick=${() => store.setProfile({ keeper: defaultKeeper() })}>Restore Hoot</button>
+      <h3>${grp.full}</h3>
+      <p class="muted">Choose your guide from the members. More members are being drawn; other groups (with their own colours and worlds) can come later too.</p>
+      <div class="member-row">
+        ${grp.members.map((m) => m.sprite
+          ? html`<button class=${'member' + (m.id === g.id ? ' on' : '')} onClick=${() => { patchFandom(store, { guide: m.id }); toast(`⭐ ${m.name} is your star guide`); }} aria-pressed=${m.id === g.id}><${Portrait} scale=${3} member=${m} /><b>${m.name}</b><small>${m.id === g.id ? 'your guide' : 'choose'}</small></button>`
+          : html`<button class="member" disabled title="Coming soon"><span class="soon" style=${{ color: m.star }}>✦</span><b>${m.name}</b><small>coming soon</small></button>`)}
       </div>
     </div>
   </div>`;

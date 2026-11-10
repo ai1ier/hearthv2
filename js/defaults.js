@@ -6,17 +6,41 @@ import { defaultAvatar, defaultKeeper } from './art/sprites.js';
 export const REALMS = {
   melbourne: { id: 'melbourne', label: 'Melbourne', lat: -37.81, lon: 144.96, tz: 'Australia/Melbourne', hemisphere: 'south', climate: 'temperate', spring: 'jacaranda' },
   taipei: { id: 'taipei', label: 'Taipei', lat: 25.03, lon: 121.56, tz: 'Asia/Taipei', hemisphere: 'north', climate: 'subtropical', spring: 'sakura' },
+  // more cities (v2). climate: temperate | cold | mild | dry | subtropical (see palette() in js/art/scene.js)
+  seoul: { id: 'seoul', label: 'Seoul', lat: 37.57, lon: 126.98, tz: 'Asia/Seoul', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  tokyo: { id: 'tokyo', label: 'Tokyo', lat: 35.68, lon: 139.69, tz: 'Asia/Tokyo', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  osaka: { id: 'osaka', label: 'Osaka', lat: 34.69, lon: 135.5, tz: 'Asia/Tokyo', hemisphere: 'north', climate: 'mild', spring: 'sakura' },
+  hongkong: { id: 'hongkong', label: 'Hong Kong', lat: 22.32, lon: 114.17, tz: 'Asia/Hong_Kong', hemisphere: 'north', climate: 'subtropical', spring: 'sakura' },
+  shanghai: { id: 'shanghai', label: 'Shanghai', lat: 31.23, lon: 121.47, tz: 'Asia/Shanghai', hemisphere: 'north', climate: 'mild', spring: 'sakura' },
+  singapore: { id: 'singapore', label: 'Singapore', lat: 1.35, lon: 103.82, tz: 'Asia/Singapore', hemisphere: 'north', climate: 'subtropical', spring: 'jacaranda' },
+  kualalumpur: { id: 'kualalumpur', label: 'Kuala Lumpur', lat: 3.14, lon: 101.69, tz: 'Asia/Kuala_Lumpur', hemisphere: 'north', climate: 'subtropical', spring: 'jacaranda' },
+  bangkok: { id: 'bangkok', label: 'Bangkok', lat: 13.75, lon: 100.5, tz: 'Asia/Bangkok', hemisphere: 'north', climate: 'subtropical', spring: 'jacaranda' },
+  manila: { id: 'manila', label: 'Manila', lat: 14.6, lon: 120.98, tz: 'Asia/Manila', hemisphere: 'north', climate: 'subtropical', spring: 'jacaranda' },
+  jakarta: { id: 'jakarta', label: 'Jakarta', lat: -6.21, lon: 106.85, tz: 'Asia/Jakarta', hemisphere: 'south', climate: 'subtropical', spring: 'jacaranda' },
+  sydney: { id: 'sydney', label: 'Sydney', lat: -33.87, lon: 151.21, tz: 'Australia/Sydney', hemisphere: 'south', climate: 'mild', spring: 'jacaranda' },
+  brisbane: { id: 'brisbane', label: 'Brisbane', lat: -27.47, lon: 153.03, tz: 'Australia/Brisbane', hemisphere: 'south', climate: 'subtropical', spring: 'jacaranda' },
+  perth: { id: 'perth', label: 'Perth', lat: -31.95, lon: 115.86, tz: 'Australia/Perth', hemisphere: 'south', climate: 'dry', spring: 'jacaranda' },
+  adelaide: { id: 'adelaide', label: 'Adelaide', lat: -34.93, lon: 138.6, tz: 'Australia/Adelaide', hemisphere: 'south', climate: 'dry', spring: 'jacaranda' },
+  auckland: { id: 'auckland', label: 'Auckland', lat: -36.85, lon: 174.76, tz: 'Pacific/Auckland', hemisphere: 'south', climate: 'mild', spring: 'jacaranda' },
+  london: { id: 'london', label: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  paris: { id: 'paris', label: 'Paris', lat: 48.86, lon: 2.35, tz: 'Europe/Paris', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  berlin: { id: 'berlin', label: 'Berlin', lat: 52.52, lon: 13.4, tz: 'Europe/Berlin', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  newyork: { id: 'newyork', label: 'New York', lat: 40.71, lon: -74.01, tz: 'America/New_York', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  toronto: { id: 'toronto', label: 'Toronto', lat: 43.65, lon: -79.38, tz: 'America/Toronto', hemisphere: 'north', climate: 'cold', spring: 'sakura' },
+  vancouver: { id: 'vancouver', label: 'Vancouver', lat: 49.28, lon: -123.12, tz: 'America/Vancouver', hemisphere: 'north', climate: 'mild', spring: 'sakura' },
+  sanfrancisco: { id: 'sanfrancisco', label: 'San Francisco', lat: 37.77, lon: -122.42, tz: 'America/Los_Angeles', hemisphere: 'north', climate: 'mild', spring: 'jacaranda' },
+  losangeles: { id: 'losangeles', label: 'Los Angeles', lat: 34.05, lon: -118.24, tz: 'America/Los_Angeles', hemisphere: 'north', climate: 'dry', spring: 'jacaranda' },
 };
 
 export const CATEGORIES = {
-  fitness:  { label: 'Strength & Stride', icon: '⚔️', color: '#c0563a' },
-  outdoors: { label: 'Wilds',             icon: '🌿', color: '#4f8f3a' },
-  creative: { label: 'Artisan',           icon: '🎨', color: '#8a5bc4' },
-  learning: { label: 'Scholar',           icon: '📜', color: '#3a6fb0' },
-  social:   { label: 'Fellowship',        icon: '🍻', color: '#d08a2a' },
-  rest:     { label: 'Hearth',            icon: '🕯️', color: '#7a6a5a' },
-  chores:   { label: 'Homestead',         icon: '🧺', color: '#5a8a80' },
-  main:     { label: 'Main Quest',        icon: '👑', color: '#b8892a' },
+  fitness:  { label: 'Stardust Training', icon: '💫', color: '#d0607a' },
+  outdoors: { label: 'Wanderlust',        icon: '🌠', color: '#3f9a74' },
+  creative: { label: 'Dreamcraft',        icon: '🎨', color: '#9a5ad0' },
+  learning: { label: 'Star Study',        icon: '📖', color: '#4a72c8' },
+  social:   { label: 'Together',          icon: '💌', color: '#d07a4a' },
+  rest:     { label: 'Moonlight Rest',    icon: '🌙', color: '#6a62a0' },
+  chores:   { label: 'Planet Care',       icon: '🪴', color: '#3a8a90' },
+  main:     { label: 'Main Chapter',      icon: '👑', color: '#b8892a' },
 };
 
 // intensity: 0 restful … 3 hard training. sweat: needs a wash-up afterwards.
@@ -35,6 +59,7 @@ export function defaultProfile() {
     avatar: defaultAvatar(),
     avatarDesigns: [], // uploads you chose to keep: {id, name, image, size}
     keeper: defaultKeeper(),
+    fandom: null, // v2 only: { group, guide, avatar }, see js/fandom/index.js
     realm: 'melbourne',
     day: { wake: '07:30', sleep: '23:30' },
     minSlot: 30,          // shortest gap worth a quest

@@ -40,22 +40,22 @@ function applyOracle(offers, reading) {
 const pickBy = (arr, seed) => arr[Math.floor(hash(seed) * arr.length) % arr.length];
 
 const OPEN = {
-  morning: ['Good morning, {n}!', 'Rise and shine, {n}!', 'Morning, {n} — the kettle’s on.'],
+  morning: ['Good morning, {n}!', 'Rise and shine, {n}!', 'Morning, {n}. Ready when you are.'],
   afternoon: ['Hello again, {n}!', 'There you are, {n}!', 'Good afternoon, {n}.'],
-  evening: ['Good evening, {n}.', 'Welcome home, {n}.', 'Come warm your hands, {n}.'],
-  night: ['Still up, {n}? I’ll keep you company.', 'A quiet night, {n}.'],
+  evening: ['Good evening, {n}.', 'Welcome back to the planet, {n}.', 'The first stars are out, {n}.'],
+  night: ['Still up, {n}? Don’t stay up too late.', 'A quiet, starry night, {n}.'],
 };
 const DAY = {
-  low: ['Low flame today? That’s alright — even embers keep a hearth warm.', 'Go gently today. Small steps are still steps forward.', 'Rest is not falling behind; it’s how heroes get their strength back.'],
-  busy: ['A full road today — but you’ve walked busy roads before, and walked them well.', 'So much happening today — what a rich day! One lovely thing at a time.', 'Big day! Remember to breathe between the engagements — you’ve got this.'],
-  light: ['The road is wide open today — a lovely chance to follow your curiosity.', 'A gentle, roomy day. Spend some of it on something that makes you happy.', 'Plenty of sky today. Something good is waiting to be found.'],
+  low: ['Low on starlight today? That’s alright — even the dimmest star still shines.', 'Go gently today. Small steps are still steps forward.', 'Rest is not falling behind; it’s how stars get their glow back.'],
+  busy: ['A full road today — but you’ve walked busy roads before, and walked them well.', 'So much happening today. One thing at a time.', 'Big day! Remember to breathe between the engagements — you’ve got this.'],
+  light: ['The road is wide open today, a good chance to follow your curiosity.', 'A gentle, roomy day. Spend some of it on something that makes you happy.', 'Plenty of sky today. Something good is waiting to be found.'],
   mid: ['A nice balance of duties and daylight today. You’re doing great.', 'Today has a good rhythm to it. Trust it.', 'Steady and well-paced — the kind of day that quietly adds up.'],
 };
 const SPIRIT = {
-  adventure: 'I can sense adventure in your boots!',
-  hearth: 'Something cozy is calling — answer it without any guilt.',
-  fellowship: 'A wonderful day for warm company.',
-  focus: 'Your mind feels sharp today — a fine time for the big quests.',
+  adventure: 'I can sense an adventure coming — let’s go find it!',
+  hearth: 'Something soft and dreamy is calling — answer it without any guilt.',
+  fellowship: 'A good day to spend time with friends.',
+  focus: 'Your mind feels sharp today — a fine time for the big chapter.',
 };
 const FORTUNES = [
   'A small kindness you give today will find its way back to you.',
@@ -63,13 +63,13 @@ const FORTUNES = [
   'An ordinary moment today will turn out to be a favourite memory.',
   'The thing you’re nervous about will go better than you fear.',
   'A good idea is hiding in the next walk you take.',
-  'Someone is thinking fondly of you right now.',
+  'A message today will make you smile.',
   'Today’s little effort is tomorrow’s easy road.',
-  'The stars say: be proud of how far you’ve come.',
-  'A cup of something warm will fix more than you expect.',
+  'The stars say: look how far you’ve come.',
+  'A song you love will find you at just the right moment.',
   'You will learn something delightful by accident.',
   'Your future self is already grateful for today’s choices.',
-  'Luck favours the one who rests well. Sleep sweetly tonight.',
+  'Luck favours the one who rests well. Sleep under a sky full of stars tonight.',
 ];
 
 // Hoot's words: encouragement and a fortune, never a tally of hours or quests.
@@ -83,7 +83,7 @@ export function hootSays(state, dayPlan, week, now = new Date()) {
   const lines = [pickBy(OPEN[per], key + per).replace('{n}', name)];
 
   const doneToday = state.quests.filter((q) => q.done && q.date === key);
-  if (doneToday.length && isToday) lines.push(`You finished “${doneToday[doneToday.length - 1].title}” — I’m proud of you!`);
+  if (doneToday.length && isToday) lines.push(`You finished “${doneToday[doneToday.length - 1].title}” — nice work!`);
   else if (!isToday) lines.push(dayPlan.date > now ? 'Peeking ahead? Wise. Future you will thank you.' : 'Looking back is how stories get remembered.');
   else {
     // just one more thought, so the oracle stays brief
@@ -99,13 +99,13 @@ export function weekReading(state, week, events) {
   out.push({ icon: lvl.icon, t: `${lvl.name}. ${lvl.blurb}` });
   const b = week.busiest, f = week.freest;
   if (b.load > 0.4) out.push({ icon: '🎉', t: `${b.date.toLocaleDateString([], { weekday: 'long' })} is your fullest day (${fmtDur(b.busy)} of plans). A cosy evening before it will set you up nicely.` });
-  if (f.free > 180) out.push({ icon: '🗺️', t: `${f.date.toLocaleDateString([], { weekday: 'long' })} has the most open road — ${fmtDur(f.free)} free. Good for a long quest.` });
+  if (f.free > 180) out.push({ icon: '🗺️', t: `${f.date.toLocaleDateString([], { weekday: 'long' })} has the most open sky — ${fmtDur(f.free)} free. Good for a long quest.` });
 
   const wk = iso(week.monday);
   const inWeek = state.quests.filter((q) => iso(startOfWeek(new Date(q.start))) === wk);
   const fitTarget = state.profile.activities.filter((a) => a.category === 'fitness' && a.enabled !== false).reduce((n, a) => n + (a.weeklyTarget || 0), 0);
   const fitDone = inWeek.filter((q) => q.category === 'fitness').length + events.filter((e) => !e.allDay && iso(startOfWeek(e.start)) === wk && eventIsFitness(state.profile, e, matchPlace(state.profile, e))).length;
-  if (fitTarget) out.push({ icon: '⚔️', t: fitDone >= fitTarget ? `Training: ${fitDone}/${fitTarget} sessions — target met. Extra sessions will be gentle ones.` : `Training: ${fitDone}/${fitTarget} sessions planned. I'll weave in the rest around showers, sleep and big days.` });
+  if (fitTarget) out.push({ icon: '💫', t: fitDone >= fitTarget ? `Training: ${fitDone}/${fitTarget} sessions — target met. Extra sessions will be gentle ones.` : `Training: ${fitDone}/${fitTarget} sessions planned. I'll weave in the rest around showers, sleep and big days.` });
 
   for (const g of state.profile.goals) {
     if (g.done || !g.due) continue;

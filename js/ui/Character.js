@@ -1,4 +1,5 @@
 // The Character sheet: every preference the quest giver uses.
+import { fandomOf, patchFandom } from '../fandom/index.js';
 import { html, useState } from '../vendor.js';
 import { store } from '../store.js';
 import { REALMS, CATEGORIES } from '../defaults.js';
@@ -34,7 +35,7 @@ export function Character({ state }) {
           <h3>🧝 Identity</h3>
           <div class="grid2">
             <${Field} label="Name"><input value=${p.name} onInput=${(e) => P({ name: e.target.value })} /></${Field}>
-            <${Field} label="Title"><input value=${p.title} onInput=${(e) => P({ title: e.target.value })} /></${Field}>
+            <${Field} label="Title"><input value=${fandomOf(p).title} maxlength="32" onInput=${(e) => patchFandom(store, { title: e.target.value })} /></${Field}>
             <${Field} label="Current realm" hint="Switches places, seasons, sunrise and weather">
               <select value=${p.realm} onChange=${(e) => P({ realm: e.target.value })}>${Object.values(REALMS).map((r) => html`<option value=${r.id}>${r.label}</option>`)}</select></${Field}>
             <${Field} label="Usual travel">

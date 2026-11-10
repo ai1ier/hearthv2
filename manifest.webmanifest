@@ -1,13 +1,13 @@
 {
-  "name": "Hearthside Quest Planner",
-  "short_name": "Hearthside",
-  "description": "A cosy pixel-art planner that turns your calendar into quests.",
+  "name": "Star Chapter · TXT Planner",
+  "short_name": "Star Chapter",
+  "description": "A dreamy pixel planner for MOA: your calendar becomes quests on a tiny star planet.",
   "start_url": "./#today",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#4a2f1d",
-  "theme_color": "#4a2f1d",
+  "background_color": "#2e2670",
+  "theme_color": "#2e2670",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },

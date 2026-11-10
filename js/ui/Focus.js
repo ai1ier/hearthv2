@@ -4,21 +4,23 @@ import { focusStatus, pauseFocus, resumeFocus, extendFocus, anotherRound, skipBr
 import { setAmbience, setVolume, chime, teaChime } from '../ambience.js';
 import { Portrait, Meter, keeperLabel } from './common.js';
 import { hash, fmtDur } from '../time.js';
+import { worldById, breakLine } from '../worlds.js';
+import { guideOf } from '../fandom/index.js';
 
 const CHEER = {
-  focus: ['You’re doing wonderfully. One page at a time.', 'Steady quill, steady heart.', 'Every minute here is a stone on the path.', 'The candle burns, and so does your focus. Lovely.', 'Small, patient steps make the grandest quests.'],
-  break: ['Tea break! Stretch, sip, and look out the window.', 'Rest your eyes, dear. The book will wait.', 'A little wander around the room does wonders.'],
-  done: ['Quest complete! I’m so proud of you — claim your reward.', 'You did it! The hourglass is full.'],
+  focus: ['Good pace. One page at a time.', 'Steady and focused. Nice.', 'Every minute here is a stone on the path.', 'The candle’s still burning, and so is your focus.', 'Small, patient steps make the grandest quests.'],
+  break: ['Tea break! Stretch, sip, and look out the window.', 'Rest your eyes for a bit. The book will wait.', 'A little wander around the room does wonders.'],
+  done: ['Quest complete! Nice work. Claim your reward.', 'You did it! The hourglass is full.'],
   paused: ['Paused. Take all the time you need.'],
 };
 
 export const mmss = (min) => { const t = Math.max(0, Math.round(min * 60)); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
 
 const OUT_CHEER = {
-  fitness: ['Strong legs, strong heart! Go at your own pace.', 'Every stride counts — and so does the cool-down.', 'Breathe deep. The river runs right alongside you.'],
-  social: ['Good company is the best kind of magic.', 'Laugh loudly, stay late if you like. Rest is part of the quest.', 'Raise a mug to friendship!'],
-  outdoors: ['Listen — the woods are saying hello.', 'No hurry out here. Notice one small, lovely thing.', 'Fresh air and quiet paths. Just what the oracle ordered.'],
-  chores: ['A tidy hearth is a happy hearth.', 'One shelf at a time — look how it sparkles!', 'Put on a song and let the broom dance.'],
+  fitness: ['Five, six, seven, eight! Move at your own pace.', 'Every step counts, and so does the cool-down.', 'Breathe deep and feel the beat. You’re shining!'],
+  social: ['Good company is the best kind of magic.', 'Laugh loudly, stay late if you like. Rest is part of the quest.', 'Raise a milk tea to friendship!'],
+  outdoors: ['Listen: the garden is saying hello.', 'No hurry out here. Notice one small thing you like.', 'Fresh air and starlit paths. Just what the stars ordered.'],
+  chores: ['A tidy planet is a happy planet.', 'One shelf at a time. Look how it sparkles!', 'Put on a song and let the broom dance.'],
 };
 
 function OutingPanel({ state }) {
@@ -28,7 +30,7 @@ function OutingPanel({ state }) {
   const mins = Math.max(1, Math.round((Date.now() - f.startedAt) / 60000));
   const q = state.quests.find((x) => x.id === f.questId);
   const lines = OUT_CHEER[f.category] || OUT_CHEER.chores;
-  const cheer = f.doneAt ? `Wonderful! Quest complete${q ? ` — +${q.xp} XP` : ''}. Let’s head home to the meadow.` : lines[Math.floor(hash(f.questId + Math.floor(mins / 10)) * lines.length)];
+  const cheer = f.doneAt ? `Wonderful! Quest complete${q ? ` — +${q.xp} XP` : ''}. Let’s fly home to the planet.` : lines[Math.floor(hash(f.questId + Math.floor(mins / 10)) * lines.length)];
   return html`<section class="panel focus-panel outing-panel" aria-live="polite">
     <div class="focus-top">
       <div class="focus-quest">
@@ -89,11 +91,13 @@ function StudyPanel({ state }) {
       else if (st.phase === 'focus' && lastPhase.current === 'break') teaChime(true);
     }
     lastPhase.current = st.phase;
-    document.title = st.phase === 'done' ? '✨ Quest complete · Hearthside' : `${paused ? '⏸ ' : st.phase === 'break' ? '☕ ' : ''}${mmss(st.left)} · ${f.title}`;
+    document.title = st.phase === 'done' ? '✨ Quest complete · Star Chapter' : `${paused ? '⏸ ' : st.phase === 'break' ? '☕ ' : ''}${mmss(st.left)} · ${f.title}`;
   });
-  useEffect(() => () => { document.title = 'Hearthside Quest Planner'; }, []);
+  useEffect(() => () => { document.title = 'Star Chapter'; }, []);
   const goal = f.goalId ? state.profile.goals.find((g) => g.id === f.goalId) : null;
-  const cheer = CHEER[mood][Math.floor(hash(f.questId + Math.floor(st.focused / 5)) * CHEER[mood].length)];
+  const world = worldById(f.world);
+  // on a travel planet, the break is a little moment with your guide
+  const cheer = world && mood === 'break' ? breakLine(world, st.round, guideOf(state.profile).name) : CHEER[mood][Math.floor(hash(f.questId + Math.floor(st.focused / 5)) * CHEER[mood].length)];
   const toggleSound = (k) => { const next = sound === k ? null : k; setSound(next); setAmbience(next, vol); };
 
   return html`<section class="panel focus-panel" aria-live="polite">
@@ -101,6 +105,7 @@ function StudyPanel({ state }) {
       <div class="focus-quest">
         <small>${st.phase === 'break' ? '☕ Tea break' : st.phase === 'done' ? '✨ Complete' : paused ? '⏸ Paused' : f.pomodoro ? `Focus · round ${st.round}` : 'Focusing'}</small>
         <h3>${f.icon} ${f.title}</h3>
+        ${world ? html`<small>${world.icon} ${world.where}</small>` : null}
         ${goal && goal.type === 'deadline' ? html`<small>${goal.title}: ${(goal.hoursDone + st.focused / 60).toFixed(1)}/${goal.hoursNeeded}h prepared</small>` : null}
       </div>
       <div class=${'timer' + (st.phase === 'break' ? ' rest' : '') + (paused ? ' paused' : '')}>${st.phase === 'done' ? 'DONE' : mmss(st.left)}</div>
@@ -138,7 +143,7 @@ function StudyPanel({ state }) {
         <div class="row">
           <span class="field-label">Ambience</span>
           <button class=${'btn xs' + (sound === 'rain' ? ' on' : '')} onClick=${() => toggleSound('rain')}>🌧️ Rain</button>
-          <button class=${'btn xs' + (sound === 'hearth' ? ' on' : '')} onClick=${() => toggleSound('hearth')}>🔥 Hearth</button>
+          <button class=${'btn xs' + (sound === 'hearth' ? ' on' : '')} onClick=${() => toggleSound('hearth')}>🔥 Fireside</button>
           ${sound && html`<input type="range" min="0" max="1" step="0.05" value=${vol} aria-label="Volume" onInput=${(e) => { setVol(+e.target.value); setVolume(+e.target.value); }} />`}
         </div>
       </div>

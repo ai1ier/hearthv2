@@ -1,4 +1,5 @@
 import { html, render, useState, useEffect, useMemo } from './vendor.js';
+import { guideOf } from './fandom/index.js';
 import { store, useStore } from './store.js';
 import { iso, startOfDay, sameDay } from './time.js';
 import { computeDay } from './engine/index.js';
@@ -22,12 +23,12 @@ import { festiveOn } from './art/festive.js';
 const TABS = [
   { id: 'today', label: 'Today', icon: 'candle' },
   { id: 'week', label: 'Week', icon: 'map' },
-  { id: 'log', label: 'Quest Log', icon: 'scroll' },
+  { id: 'log', label: 'Star Log', icon: 'scroll' },
   { id: 'library', label: 'Library', icon: 'books' },
 ];
 const SETTINGS = [
   { id: 'scrolls', label: 'Calendar & stars', icon: 'star' },
-  { id: 'avatar', label: 'Avatar & oracle', icon: 'hat' },
+  { id: 'avatar', label: 'Avatar & guide', icon: 'hat' },
   { id: 'char', label: 'Character', icon: 'hero' },
 ];
 const parseHash = () => {
@@ -68,6 +69,7 @@ function App() {
     addEventListener('hashchange', f); return () => removeEventListener('hashchange', f);
   }, []);
 
+  useEffect(cursorGlow, []);
   const festive = festiveOn(state.profile.settings);
   setFestiveIcons(festive);
   useEffect(() => { document.body.dataset.theme = festive ? 'christmas' : ''; }, [festive]);
@@ -86,7 +88,7 @@ function App() {
       const ctx = buildOracleContext(state, data.dayPlan, data.week, data.offers, data.ctx.mood, data.ctx.weekMood);
       const reading = await consultOracle(state.profile.settings.claudeKey, ctx);
       store.set((s) => ({ oracle: { ...s.oracle, [data.dayPlan.key]: { ...reading, at: Date.now() } } }));
-      toast(`✨ ${store.get().profile.keeper?.name || 'Hoot'} has read the stars`);
+      toast(`✨ ${guideOf(store.get().profile).name} has read the stars`);
     } catch (e) { toast(`Stars: ${e.message}`); }
     setOracleBusy(false);
   };
@@ -113,7 +115,7 @@ function App() {
         ${sub === 'char' && html`<${Character} state=${state} />`}
         ${sub === 'scrolls' && html`<${Scrolls} state=${state} />`}`}
     </main>
-    <footer class="foot">Hearthside Quest Planner · your data stays in this browser and, if you choose, your own Google Drive</footer>
+    <footer class="foot">Star Chapter · a MOA’s pixel planner · your data stays in this browser and, if you choose, your own Google Drive</footer>
     ${board && html`<${BoardModal} state=${state} data=${todayData} focus=${board.focus} onOpen=${openSlot} onClose=${() => setBoard(null)} />`}
     ${checkin && html`<${Checkin} state=${state} week=${todayData.week} onClose=${() => setCheckin(false)} />`}
     <${Toasts} />`;
@@ -131,3 +133,23 @@ function CloudBanner() {
 }
 
 render(html`<${App} />`, document.getElementById('app'));
+
+// A soft glow that drifts after the cursor behind the planner (only with a mouse or trackpad):
+// it eases towards the pointer, breathes a little, and fades out when the pointer leaves.
+function cursorGlow() {
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const el = document.createElement('div');
+  el.className = 'cursor-glow'; el.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(el);
+  let tx = innerWidth / 2, ty = innerHeight / 3, x = tx, y = ty, raf = 0;
+  const step = () => {
+    x += (tx - x) * 0.14; y += (ty - y) * 0.14;
+    el.style.transform = `translate(${x}px, ${y}px)`;
+    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(step) : 0;
+  };
+  const move = (e) => { tx = e.clientX; ty = e.clientY; el.classList.add('on'); if (!raf) raf = requestAnimationFrame(step); };
+  const leave = () => el.classList.remove('on');
+  addEventListener('pointermove', move, { passive: true });
+  document.documentElement.addEventListener('pointerleave', leave);
+  return () => { removeEventListener('pointermove', move); document.documentElement.removeEventListener('pointerleave', leave); cancelAnimationFrame(raf); el.remove(); };
+}

@@ -40,7 +40,7 @@ export function Scrolls({ state }) {
       <div class="panel">
         <h3>🎄 Seasonal theme</h3>
         <div class="row">${THEMES.map(([v, label]) => html`<button class=${'btn sm' + ((s.theme || 'classic') === v ? ' on' : '')} onClick=${() => S({ theme: v })}>${label}</button>`)}</div>
-        <p class="muted">Adds a tree, wreaths, garlands and twinkling lights to the meadow and study, and dresses the whole page in pine and gold. “Every December” switches it on by itself each year.</p>
+        <p class="muted">Adds a tree, wreaths, garlands and twinkling lights to the study, and dresses the whole page in pine and gold (the star planet gets its own Christmas touches in a later update). “Every December” switches it on by itself each year.</p>
       </div>
       <div class="panel cloud-panel">
         <h3>☁️ Cloud save</h3>
@@ -100,14 +100,14 @@ export function Scrolls({ state }) {
       </div>
 
       <div class="panel">
-        <h3>🔮 The Oracle (Claude)</h3>
-        <p class="muted">Optional. The built-in quest giver works offline. With a Claude API key, “Consult the Oracle” on the Today page asks Claude to re-rank the day's quests and narrate it.
+        <h3>🔮 Star reading (Claude)</h3>
+        <p class="muted">Optional. The built-in quest giver works offline. With a Claude API key, “Ask the stars” on the Today page asks Claude to re-rank the day's quests and has your guide narrate it.
           It sends that day's event titles and times, your preferences, mood and goals to the Anthropic API. Your key is stored in this browser only.</p>
         <${Field} label="Anthropic API key">
           <span class="row"><input class="grow" type=${showKey ? 'text' : 'password'} value=${s.claudeKey} placeholder="sk-ant-…" autocomplete="off" onInput=${(e) => S({ claudeKey: e.target.value.trim() })} />
           <button class="btn xs ghost" onClick=${() => setShowKey(!showKey)}>${showKey ? 'Hide' : 'Show'}</button></span>
         </${Field}>
-        <label class="inline"><input type="checkbox" checked=${s.useClaude} onChange=${(e) => S({ useClaude: e.target.checked })} /> Enable the Oracle</label>
+        <label class="inline"><input type="checkbox" checked=${s.useClaude} onChange=${(e) => S({ useClaude: e.target.checked })} /> Enable star readings</label>
       </div>
     </section>`;
 }

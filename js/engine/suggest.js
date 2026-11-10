@@ -4,21 +4,21 @@ import { MIN, addMin, addDays, startOfWeek, startOfDay, daysUntil, minutesBetwee
 import { travel, homePlace, placeById, placeName, freeMinutesUntil, buildDay } from './plan.js';
 
 export const SPIRITS = {
-  adventure: { label: 'Adventure', icon: '🗡️', cats: ['fitness', 'outdoors'] },
-  hearth:    { label: 'Cozy hearth', icon: '🔥', cats: ['rest', 'creative'] },
-  fellowship:{ label: 'Fellowship', icon: '🍻', cats: ['social'] },
-  focus:     { label: 'Scholarly focus', icon: '📜', cats: ['learning', 'main'] },
+  adventure: { label: 'Adventure', icon: '🌠', cats: ['fitness', 'outdoors'] },
+  hearth:    { label: 'Cosy & dreamy', icon: '🌙', cats: ['rest', 'creative'] },
+  fellowship:{ label: 'Together time', icon: '💌', cats: ['social'] },
+  focus:     { label: 'Star-bright focus', icon: '📖', cats: ['learning', 'main'] },
 };
 
 const TITLES = {
-  fitness: ['Trial of Strength', 'Rite of Stamina', 'The Training Grounds'],
-  outdoors: ['Call of the Wilds', "Wayfarer's Path", 'A Breath of Open Sky'],
-  creative: ["Artisan's Hour", 'The Enchanted Easel', 'Workshop of Wonders'],
-  learning: ["Scholar's Vigil", 'Delve the Tomes', 'The Quiet Library'],
-  social: ['Gathering of Fellows', 'A Raven Home', 'Tales at the Tavern'],
-  rest: ['Rest at the Inn', 'Hearthside Respite', 'Restore Your Mana'],
-  chores: ['Homestead Duties', 'Tend the Hearth', 'The Provision Run'],
-  main: ['Main Quest', 'The Great Preparation', 'The Road Ahead'],
+  fitness: ['Stardust Practice', 'Run Like a Comet', 'The Rehearsal Room'],
+  outdoors: ['Wander the Orbit', 'Follow the Breeze', 'A Breath of Open Sky'],
+  creative: ['The Dream Workshop', 'Paint a Little Galaxy', 'Make Some Magic'],
+  learning: ['Under the Study Lamp', 'Chart New Stars', 'The Quiet Library'],
+  social: ['Together Time', 'A Letter Home', 'Friends Under the Stars'],
+  rest: ['Moonlight Pause', 'Float on a Cloud', 'Recharge Your Starlight'],
+  chores: ['Planet Care', 'Tidy the Dome', 'The Supply Run'],
+  main: ['Main Chapter', 'The Big Preparation', 'Toward Tomorrow'],
 };
 export function questTitle(c, seed) {
   const list = TITLES[c.category] || TITLES.rest;
@@ -102,7 +102,7 @@ function goalCandidates(ctx, day) {
     } else if (g.type === 'ongoing') {
       if (g.linkedActivityId) { boosts[g.linkedActivityId] = g; continue; }
       const next = (g.items || []).find((i) => !i.done && i.text);
-      out.push({ key: `goal:${g.id}`, kind: 'goal', goalId: g.id, category: 'main', icon: '🌱', name: g.title, sub: next ? `Next: ${next.text}` : undefined,
+      out.push({ key: `goal:${g.id}`, kind: 'goal', goalId: g.id, category: 'main', icon: '🌙', name: g.title, sub: next ? `Next: ${next.text}` : undefined,
         minMin: g.sessionMin || 30, maxMin: g.sessionMin || 30, intensity: 0, place: g.place || 'any',
         times: ['morning', 'afternoon', 'evening', 'night'], weight: 3, weeklyTarget: g.weeklyTarget || 1, goalWeekly: true });
     }
@@ -238,8 +238,8 @@ function sameDayAs(list, day) { const k = iso(day); return list.some((h) => iso(
 export function restOption(slot, ctx) {
   return {
     key: 'free', kind: 'free', score: 0, minutes: slot.minutes, shower: 0, tIn: 0, tOut: 0, place: slot.from,
-    start: slot.start, end: slot.end, title: 'Unclaimed Wilds',
-    c: { name: 'Leave this time open', category: 'rest', icon: '🍃', intensity: 0 },
+    start: slot.start, end: slot.end, title: 'Open Sky Time',
+    c: { name: 'Leave this time open', category: 'rest', icon: '☁️', intensity: 0 },
     reasons: [{ t: 'Free time is a quest too. Wander, nap, or do nothing at all.', tone: 'info' }],
     xp: 5,
   };

@@ -33,7 +33,7 @@ export function Week({ state, events, week, offersFor, onPickDay, setDay, day })
       <div class="cols week-top">
         <div class="panel omen">
           <h3>${week.level.icon} The Omen: ${week.level.name}</h3>
-          <div class="load-chip">Week’s bounty <${Meter} value=${week.avgLoad} color=${loadColor(week.avgLoad)} /> ${Math.round(week.avgLoad * 100)}%</div>
+          <div class="load-chip">Week’s stardust <${Meter} value=${week.avgLoad} color=${loadColor(week.avgLoad)} /> ${Math.round(week.avgLoad * 100)}%</div>
           <ul class="reading">${reading.map((r) => html`<li><span>${r.icon}</span> ${r.t}</li>`)}</ul>
           <div class="outlook">
             <span>Your outlook:</span>

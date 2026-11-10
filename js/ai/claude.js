@@ -3,22 +3,21 @@
 import { fmtTime, fmtDur } from '../time.js';
 import { placeName } from '../engine/plan.js';
 import { store } from '../store.js';
-import { KEEPERS } from '../art/sprites.js';
+import { guideOf, groupOf } from '../fandom/index.js';
 
-// Speak as the player's own oracle (Hoot the owl unless they renamed or changed it).
+// Speak as the player's chosen star guide (a member of their group, Taehyun by default).
 function persona(text) {
-  const k = store.get().profile.keeper || {};
-  const species = k.image ? 'familiar' : (KEEPERS[k.preset] || KEEPERS.owl).species;
-  return text.replace(/Hoot/g, k.name || 'Hoot').replace(/owl oracle/g, `${species} oracle`);
+  const p = store.get().profile, g = guideOf(p), grp = groupOf(p);
+  return text.replace(/\{GUIDE\}/g, g.name).replace(/\{GROUP\}/g, grp.name).replace(/\{FANDOM\}/g, grp.fandom);
 }
 
 const SDK = 'https://esm.sh/@anthropic-ai/sdk@0.39.0';
 
-const SYSTEM = `You are the Oracle of a cozy fantasy-RPG day planner. The player's free time slots are "quests".
+const SYSTEM = `You are the star guide of a dreamy, starlit pixel day planner (little planets, wishes, destiny). The player's free time slots are "quests".
 For each open slot you receive candidate activities that already fit the slot (duration, travel, wash-up time).
-Pick up to 3 candidates per slot, best first, and give each a short quest title (max 5 words), one sentence of cozy fantasy flavour, and one plain-language sentence explaining why it suits the player right now.
+Pick up to 3 candidates per slot, best first, and give each a short quest title (max 5 words), one sentence of dreamy, starry flavour, and one plain-language sentence explaining why it suits the player right now.
 Balance the whole day and week: respect energy and mood, avoid stacking hard training, protect rest in busy weeks, keep long-term goals moving, and remember training affects later plans (showers, sleep, big events tomorrow).
-Only use candidateKey values given for that slot. Also write a 2-3 sentence narration for the day as Hoot, a warm, optimistic owl oracle, addressed to the player by name: encouraging and a little whimsical. Never recite hours, free time, or how many quests there are — the planner already shows those.`;
+Only use candidateKey values given for that slot. Also write a 2-3 sentence narration for the day in the voice of {GUIDE}, the player's friendly star guide (a fan-made character inspired by {GUIDE} of {GROUP}; the player is a {FANDOM}). Address the player by name: friendly, clever, quietly encouraging, a little playful. Keep it wholesome and casual, like a friend (no pet names such as "dear", nothing gushy or romantic) and never claim to be the real person. Never recite hours, free time, or how many quests there are — the planner already shows those.`;
 
 const SCHEMA = {
   type: 'object', additionalProperties: false, required: ['narration', 'slots'],
@@ -36,7 +35,7 @@ const SCHEMA = {
 export function buildOracleContext(state, dayPlan, week, offers, mood, weekMood) {
   const p = state.profile;
   return {
-    player: { name: p.name || 'traveller', title: p.title, realm: p.realm, wake: p.day.wake, sleep: p.day.sleep, travel: p.travelMode },
+    player: { name: p.name || 'MOA', title: p.title, realm: p.realm, wake: p.day.wake, sleep: p.day.sleep, travel: p.travelMode },
     preferences: p.activities.filter((a) => a.enabled !== false).map((a) => ({ name: a.name, category: a.category, liking: a.weight, weeklyTarget: a.weeklyTarget, intensity: a.intensity })),
     mood, weekOutlook: weekMood.outlook || 'unknown',
     week: { level: week.level.name, avgLoad: Math.round(week.avgLoad * 100) + '%', days: week.days.map((d) => ({ day: d.date.toLocaleDateString('en', { weekday: 'short' }), busy: fmtDur(d.busy), free: fmtDur(d.free) })) },
@@ -68,8 +67,8 @@ export async function consultOracle(apiKey, context) {
   return JSON.parse(text);
 }
 
-const CHRONICLE = `You are Hoot, a warm and optimistic owl oracle who keeps the player's chronicle in a cozy fantasy-RPG planner.
-Write a short chronicle (120-200 words) of the given period in second person, like a fond storybook recap.
+const CHRONICLE = `You are {GUIDE}, the player's friendly star guide in a dreamy, starlit pixel planner (a fan-made character inspired by {GUIDE} of {GROUP}; the player is a {FANDOM}). Keep it wholesome and never claim to be the real person.
+Write a short chronicle (120-200 words) of the given period in second person, like a fond letter written under the stars.
 Weave in real highlights from their diary entries, what they read or watched, and the quests they completed. Be encouraging and specific; never invent events that are not in the data.
 Plain prose paragraphs only — no headings or lists.`;
 

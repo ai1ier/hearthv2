@@ -1,27 +1,28 @@
-// The innkeeper's morning (and weekly) questions.
+// The guide's morning (and weekly) questions.
 import { html, useState } from '../vendor.js';
 import { store } from '../store.js';
 import { iso, startOfWeek } from '../time.js';
 import { Portrait, Hearts, keeperLabel } from './common.js';
 import { SPIRITS } from '../engine/suggest.js';
+import { guideOf } from '../fandom/index.js';
 
 const ENERGY = [
-  { v: 5, label: 'Brimming', say: 'Oh, I can feel that glow from here! Today is going to be a good one.' },
-  { v: 4, label: 'Strong', say: 'Wonderful — the stars like a bright flask.' },
-  { v: 3, label: 'Steady', say: 'Steady is a lovely way to travel. Good things come to steady walkers.' },
-  { v: 2, label: 'Running low', say: 'That’s alright. Gentle days still move you forward.' },
-  { v: 1, label: 'Nearly empty', say: 'Then today, resting IS the quest — and you’ll do it beautifully.' },
+  { v: 5, label: 'Shining', say: 'Oh, I can see that glow from here! Today is going to be a good one.' },
+  { v: 4, label: 'Bright', say: 'Bright! That’s a good start to the day.' },
+  { v: 3, label: 'Steady glow', say: 'Steady works. Good things come to steady stars.' },
+  { v: 2, label: 'Dimming', say: 'That’s alright. Gentle days still move you forward.' },
+  { v: 1, label: 'Need recharging', say: 'Then today, resting is the quest. That counts too.' },
 ];
 const AILMENTS = [
-  { v: 'none', label: 'None — hale and whole', icon: '✨' },
+  { v: 'none', label: 'Nothing — all sparkly', icon: '✨' },
   { v: 'tired', label: 'Slept poorly', icon: '🥱' },
   { v: 'sore', label: 'Sore muscles', icon: '🦵' },
   { v: 'stressed', label: 'A stressed mind', icon: '🌀' },
 ];
 const OUTLOOK = [
-  { v: 'seize', label: 'Seize the week!', icon: '🔥', hint: 'More ambitious quests' },
-  { v: 'steady', label: 'A steady march', icon: '🥾', hint: 'Balanced' },
-  { v: 'survive', label: 'Take it gently', icon: '🍵', hint: 'Lighter quests, more rest' },
+  { v: 'seize', label: 'Reach for the stars!', icon: '🌠', hint: 'More ambitious quests' },
+  { v: 'steady', label: 'A steady orbit', icon: '🪐', hint: 'Balanced' },
+  { v: 'survive', label: 'Take it gently', icon: '🌙', hint: 'Lighter quests, more rest' },
 ];
 
 export function Checkin({ state, week, onClose }) {
@@ -33,7 +34,8 @@ export function Checkin({ state, week, onClose }) {
   const [ans, setAns] = useState({});
   const [reply, setReply] = useState('');
   const [typed, setTyped] = useState('');
-  const name = state.profile.name || 'traveller';
+  const name = state.profile.name || 'MOA';
+  const guide = guideOf(state.profile);
 
   const finish = (a) => {
     store.set((s) => ({ moods: { ...s.moods, [iso(today)]: { energy: a.energy ?? 3, spirit: a.spirit, ailment: a.ailment || 'none', at: Date.now() } } }));
@@ -45,14 +47,14 @@ export function Checkin({ state, week, onClose }) {
     const n = typed.trim().slice(0, 24);
     if (!n) return;
     store.setProfile({ name: n });
-    setReply(`${n}! What a fine name for an adventurer.`);
+    setReply(`${n}. Got it, nice to meet you.`);
     setStep(needWeek ? 'week' : 'energy');
   };
 
   let q;
   if (step === 'name') {
     q = {
-      say: 'Well met, traveller, and welcome to the hearth! Before we plan any quests — what shall I call you?',
+      say: `Hi, welcome to our little planet! I’m ${guide.name}, and I’ll be your star navigator. Before we chart any quests — what should I call you?`,
       form: html`<form class="name-ask" onSubmit=${giveName}>
         <input type="text" value=${typed} maxlength="24" placeholder="Your name" aria-label="Your name" autofocus onInput=${(e) => setTyped(e.target.value)} />
         <button class="btn sm gold" disabled=${!typed.trim()}>That’s me</button>
@@ -61,32 +63,32 @@ export function Checkin({ state, week, onClose }) {
     };
   } else if (step === 'week') {
     q = {
-      say: `${reply ? reply + ' And a fresh week begins!' : `A fresh week, ${name}!`} The stars call it ${week.level.icon} ${week.level.name}. Whatever it brings, I believe you’ll meet it well. How do you feel about the road ahead?`,
+      say: `${reply ? reply + ' And a fresh week begins!' : `A fresh week, ${name}!`} The stars call it ${week.level.icon} ${week.level.name}. Whatever it brings, I believe you’ll meet it well. How do you feel about the week ahead?`,
       opts: OUTLOOK.map((o) => ({ ...o, pick: () => {
         store.set((s) => ({ weekMoods: { ...s.weekMoods, [wkKey]: { outlook: o.v, at: Date.now() } } }));
-        setReply(o.v === 'survive' ? 'A gentle week it is — I’ll keep things cosy and kind.' : o.v === 'seize' ? 'That spark! The week doesn’t stand a chance.' : 'One lovely step after another, then.');
+        setReply(o.v === 'survive' ? 'A gentle week it is. I’ll keep the plans light.' : o.v === 'seize' ? 'That spark! The week doesn’t stand a chance.' : 'One step at a time, then.');
         setStep('energy');
       } })),
     };
   } else if (step === 'energy') {
     q = {
-      say: `${reply ? reply + ' ' : `Welcome back, ${name} — I’m so glad you’re here! `}How full is your stamina flask today?`,
-      opts: ENERGY.map((o) => ({ ...o, icon: html`<${Hearts} value=${o.v} px=${2} />`, pick: () => { setAns({ ...ans, energy: o.v }); setReply(o.say); setStep('spirit'); } })),
+      say: `${reply ? reply + ' ' : `Welcome back, ${name}. `}How much starlight do you have in you today?`,
+      opts: ENERGY.map((o) => ({ ...o, icon: html`<${Hearts} value=${o.v} px=${1.5} />`, pick: () => { setAns({ ...ans, energy: o.v }); setReply(o.say); setStep('spirit'); } })),
     };
   } else if (step === 'spirit') {
     q = {
-      say: `${reply} And what is your heart wishing for today?`,
+      say: `${reply} And what are you in the mood for today?`,
       opts: Object.entries(SPIRITS).map(([v, s]) => ({ v, label: s.label, icon: s.icon, pick: () => { setAns({ ...ans, spirit: v }); setReply(''); setStep('ailment'); } })),
     };
   } else {
     q = {
-      say: 'Last one, dear — anything weighing on you that I should be gentle about?',
+      say: 'Last one: anything I should plan around today?',
       opts: AILMENTS.map((o) => ({ ...o, pick: () => finish({ ...ans, ailment: o.v }) })),
     };
   }
 
   return html`
-    <div class="modal-back" role="dialog" aria-modal="true" aria-label="Innkeeper check-in">
+    <div class="modal-back" role="dialog" aria-modal="true" aria-label="Morning check-in">
       <div class="modal panel">
         <div class="keeper-row">
           <${Portrait} scale=${5} />
